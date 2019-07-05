@@ -1,0 +1,10 @@
+[package]
+name = "roguelike"
+version = "0.1.0"
+authors = ["Guillaume"]
+edition = "2018"
+
+[dependencies]
+rand = "0.7.0"
+text_io = "0.1.7"
+pancurses = "0.16"
