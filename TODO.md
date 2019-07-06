@@ -1,0 +1,3 @@
+- Refactor game world into a tile grid
+- Add a proper game world generator that creates a tile grid
+- Add entities (characters, items etc.)
