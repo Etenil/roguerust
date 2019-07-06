@@ -20,12 +20,58 @@ pub trait GameWorld<'a> {
 }
 
 impl World {
-    fn make_corridor(&mut self, start: (usize, usize), end: (usize, usize)) {
-        for x in start.0..end.0 {
-            for y in start.1..end.1 {
-                self.world[x - 1][y] = BlockType::Wall;
-                self.world[x][y] = BlockType::Floor;
-                self.world[x + 1][y] = BlockType::Wall;
+    fn make_vertical_corridor(&mut self, start: (usize, usize), length: usize) {
+        let x = start.0;
+        let endy = start.1 + length;
+        for y in start.1..endy {
+            self.wall_up(x - 1, y);
+            self.set_tile(x, y, BlockType::Floor);
+            self.wall_up(x + 1, y);
+        }
+    }
+
+    fn make_horizontal_corridor(&mut self, start: (usize, usize), length: usize) {
+        let y = start.1;
+        let endx = start.0 + length;
+        for x in start.0..endx {
+            self.wall_up(x, y - 1);
+            self.set_tile(x, y, BlockType::Floor);
+            self.wall_up(x, y - 1);
+        }
+    }
+
+    fn set_tile(&mut self, x: usize, y: usize, block: BlockType) {
+        self.world[y][x] = block;
+    }
+
+    /// Puts a wall on the coordinates if it isn't a floor.
+    fn wall_up(&mut self, x: usize, y: usize) {
+        self.set_tile(x, y, match self.world[y][x] {
+            BlockType::Floor => BlockType::Floor,
+            _ => BlockType::Wall
+        })
+    }
+
+    /// Creates a room at the given coordinates of the given size.
+    fn make_room(&mut self, start: (usize, usize), width: usize, height: usize) {
+        let endx = start.0 + width;
+        let endy = start.1 + height;
+
+        // Draw the walls
+        for x in start.0..endx {
+            self.wall_up(x, start.1);
+            self.wall_up(x, endy);
+        }
+
+        for y in start.1..endy {
+            self.wall_up(start.0, y);
+            self.wall_up(endx, y);
+        }
+
+        // Fill the room
+        for x in (start.0 + 1)..(endx) {
+            for y in (start.1 + 1)..(endy) {
+                self.set_tile(x, y, BlockType::Floor);
             }
         }
     }
@@ -48,7 +94,8 @@ impl<'a> GameWorld<'a> for World {
             self.world.push(subvec);
         }
 
-        self.make_corridor((1, 10), (1, 13))
+        self.make_room((1, 13), 5, 7);
+        self.make_vertical_corridor((3, 5), 10);
     }
 
     fn get_world(&'a self) -> &'a Vec<Vec<BlockType>> {
