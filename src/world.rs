@@ -1,3 +1,6 @@
+use rand::Rng;
+
+#[derive(Clone)]
 pub enum TileType {
     Empty,
     Wall,
@@ -108,7 +111,7 @@ pub struct TileGrid {
     grid: Vec<Vec<TileType>>
 }
 
-impl TileGrid {
+impl<'a> TileGrid {
     pub fn new(size: usize) -> TileGrid {
         let mut grid = TileGrid {
             grid: Vec::with_capacity(size)
@@ -133,8 +136,12 @@ impl TileGrid {
     fn set_empty_tile(&mut self, x: usize, y: usize, tile: TileType) {
         self.set_tile(x, y, match self.grid[y][x] {
             TileType::Empty => tile,
-            _ => self.grid[y][x]
+            _ => self.grid[y][x].clone()
         })
+    }
+
+    pub fn raw_data(&'a self) -> &'a Vec<Vec<TileType>> {
+        &self.grid
     }
 }
 
@@ -152,7 +159,18 @@ pub trait GameWorld {
 }
 
 impl World {
+    fn overlaps(&self, start: (usize, usize), width: usize, height: usize) -> bool {
+        for room in &self.world {
+            if room.start.0 < start.0 + width &&
+                room.start.0 + room.width > start.0 &&
+                room.start.1 < start.1 + height &&
+                room.start.1 + room.height > start.1 {
+                return true;
+            }
+        }
 
+        return false;
+    }
 }
 
 impl GameWorld for World {
@@ -164,14 +182,35 @@ impl GameWorld for World {
     }
     
     fn generate(&mut self) {
-        self.world.push(Room::new((3, 3), 5, 8));
+        let mut rng = rand::thread_rng();
+        let room_number = rng.gen_range(3, 5);
+
+        for _ in 0..room_number {
+            let room_width = rng.gen_range(3, 6);
+            let room_height = rng.gen_range(3, 6);
+
+            // TODO find a way to write a lambda to generate the start point.
+            let mut start: (usize, usize) = (
+                rng.gen_range(0, self.size - room_width),
+                rng.gen_range(0, self.size - room_height)
+            );
+
+            while self.overlaps(start, room_width, room_height) {
+                start = (
+                    rng.gen_range(0, self.size - room_width),
+                    rng.gen_range(0, self.size - room_height)
+                );
+            }
+
+            self.world.push(Room::new((3, 3), room_width, room_height));
+        }
     }
 
     fn to_tilegrid(&self) -> TileGrid {
         let mut grid = TileGrid::new(self.size);
 
-        for room in self.world {
-            room.tile(&mut grid);
+        for room in &self.world {
+            room.tile(&mut grid).unwrap();
         }
 
         grid

@@ -14,13 +14,13 @@ use pancurses::{Window, initscr, endwin};
 use rand::Rng;
 use std::io;
 use std::convert::TryFrom;
-use world::{World, GameWorld, BlockType};
+use world::{World, GameWorld, TileType};
 
-fn draw_block(window: &Window, block: &BlockType) {
+fn draw_block(window: &Window, block: &TileType) {
     let repr = match block {
-        BlockType::Floor => ".",
-        BlockType::Wall => "0",
-        BlockType::Nothing => " "
+        TileType::Floor => ".",
+        TileType::Wall => "0",
+        TileType::Empty => " "
     };
 
     print!("{}", repr);
@@ -29,9 +29,9 @@ fn draw_block(window: &Window, block: &BlockType) {
 }
 
 fn render_world(window: &Window, world: &World) {
-    let grid = world.get_world();
+    let grid = world.to_tilegrid();
 
-    for (linenum, line) in grid.iter().enumerate() {
+    for (linenum, line) in grid.raw_data().iter().enumerate() {
         for block in line.iter() {
             draw_block(&window, block);
         }
