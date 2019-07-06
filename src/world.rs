@@ -1,109 +1,180 @@
-pub enum BlockType {
-    Nothing,
+pub enum TileType {
+    Empty,
     Wall,
     Floor,
 }
 
-pub struct World {
-    size: usize,
-    world: Vec<Vec<BlockType>>
+enum CorridorType {
+    Horizontal,
+    Vertical
 }
 
-pub trait GameWorld<'a> {
+trait Tileable {
+    fn tile(&self, grid: &mut TileGrid) -> Result<(), String>;
+}
+
+struct Room {
+    start: (usize, usize),
+    width: usize,
+    height: usize
+}
+
+impl Room {
+    fn new(start: (usize, usize), width: usize, height: usize) -> Room {
+        Room {
+            start,
+            width,
+            height
+        }
+    }
+}
+
+impl Tileable for Room {
+    fn tile(&self, grid: &mut TileGrid) -> Result<(), String> {
+        // TODO: Detect if the room would leave the grid.
+        let endx = self.start.0 + self.width;
+        let endy = self.start.1 + self.height;
+
+        // Draw the walls
+        for x in self.start.0..endx {
+            grid.set_empty_tile(x, self.start.1, TileType::Wall);
+            grid.set_empty_tile(x, endy, TileType::Wall);
+        }
+
+        for y in self.start.1..endy {
+            grid.set_empty_tile(self.start.0, y, TileType::Wall);
+            grid.set_empty_tile(endx, y, TileType::Wall);
+        }
+
+        // Fill the room
+        for x in (self.start.0 + 1)..(endx) {
+            for y in (self.start.1 + 1)..(endy) {
+                grid.set_tile(x, y, TileType::Floor);
+            }
+        }
+
+        Ok(())
+    }
+}
+
+struct Corridor {
+    start: (usize, usize),
+    length: usize,
+    direction: CorridorType
+}
+
+impl Corridor {
+    fn new(start: (usize, usize), length: usize, direction: CorridorType) -> Corridor {
+        Corridor {
+            start,
+            length,
+            direction
+        }
+    }
+
+    fn tile_vertical(&self, grid: &mut TileGrid) {
+        let x = self.start.0;
+        let endy = self.start.1 + self.length;
+        for y in self.start.1..endy {
+            grid.set_empty_tile(x - 1, y, TileType::Wall);
+            grid.set_tile(x, y, TileType::Floor);
+            grid.set_empty_tile(x + 1, y, TileType::Wall);
+        }
+    }
+
+    fn tile_horizontal(&self, grid: &mut TileGrid) {
+        let y = self.start.1;
+        let endx = self.start.0 + self.length;
+        for x in self.start.0..endx {
+            grid.set_empty_tile(x, y - 1, TileType::Wall);
+            grid.set_tile(x, y, TileType::Floor);
+            grid.set_empty_tile(x, y - 1, TileType::Wall);
+        }
+    }
+}
+
+impl Tileable for Corridor {
+    fn tile(&self, grid: &mut TileGrid) -> Result<(), String> {
+        // TODO: ensure the corridor isn't leaving the grid.
+        match self.direction {
+            CorridorType::Horizontal => self.tile_horizontal(grid),
+            CorridorType::Vertical => self.tile_vertical(grid)
+        }
+        Ok(())
+    }
+}
+
+pub struct TileGrid {
+    grid: Vec<Vec<TileType>>
+}
+
+impl TileGrid {
+    pub fn new(size: usize) -> TileGrid {
+        let mut grid = TileGrid {
+            grid: Vec::with_capacity(size)
+        };
+
+        for _ in 0..size {
+            let mut subvec = Vec::with_capacity(size);
+            for _ in 0..size {
+                subvec.push(TileType::Empty);
+            }
+            grid.grid.push(subvec);
+        }
+
+        return grid;
+    }
+
+    fn set_tile(&mut self, x: usize, y: usize, tile: TileType) {
+        self.grid[y][x] = tile;
+    }
+
+    /// Sets a tile if nothing lies underneath it.
+    fn set_empty_tile(&mut self, x: usize, y: usize, tile: TileType) {
+        self.set_tile(x, y, match self.grid[y][x] {
+            TileType::Empty => tile,
+            _ => self.grid[y][x]
+        })
+    }
+}
+
+pub struct World {
+    size: usize,
+    world: Vec<Room>
+}
+
+pub trait GameWorld {
     fn new(size: usize) -> Self;
 
     fn generate(&mut self);
 
-    fn get_world(&'a self) -> &'a Vec<Vec<BlockType>>;
-
-    fn get_item(&'a self, x: usize, y: usize) -> &'a BlockType;
+    fn to_tilegrid(&self) -> TileGrid;
 }
 
 impl World {
-    fn make_vertical_corridor(&mut self, start: (usize, usize), length: usize) {
-        let x = start.0;
-        let endy = start.1 + length;
-        for y in start.1..endy {
-            self.wall_up(x - 1, y);
-            self.set_tile(x, y, BlockType::Floor);
-            self.wall_up(x + 1, y);
-        }
-    }
 
-    fn make_horizontal_corridor(&mut self, start: (usize, usize), length: usize) {
-        let y = start.1;
-        let endx = start.0 + length;
-        for x in start.0..endx {
-            self.wall_up(x, y - 1);
-            self.set_tile(x, y, BlockType::Floor);
-            self.wall_up(x, y - 1);
-        }
-    }
-
-    fn set_tile(&mut self, x: usize, y: usize, block: BlockType) {
-        self.world[y][x] = block;
-    }
-
-    /// Puts a wall on the coordinates if it isn't a floor.
-    fn wall_up(&mut self, x: usize, y: usize) {
-        self.set_tile(x, y, match self.world[y][x] {
-            BlockType::Floor => BlockType::Floor,
-            _ => BlockType::Wall
-        })
-    }
-
-    /// Creates a room at the given coordinates of the given size.
-    fn make_room(&mut self, start: (usize, usize), width: usize, height: usize) {
-        let endx = start.0 + width;
-        let endy = start.1 + height;
-
-        // Draw the walls
-        for x in start.0..endx {
-            self.wall_up(x, start.1);
-            self.wall_up(x, endy);
-        }
-
-        for y in start.1..endy {
-            self.wall_up(start.0, y);
-            self.wall_up(endx, y);
-        }
-
-        // Fill the room
-        for x in (start.0 + 1)..(endx) {
-            for y in (start.1 + 1)..(endy) {
-                self.set_tile(x, y, BlockType::Floor);
-            }
-        }
-    }
 }
 
-impl<'a> GameWorld<'a> for World {
+impl GameWorld for World {
     fn new(size: usize) -> World {
         World {
-            size: size,
-            world: Vec::with_capacity(size)
+            size,
+            world: Vec::new()
         }
     }
     
     fn generate(&mut self) {
-        for _ in 0..self.size {
-            let mut subvec = Vec::with_capacity(self.size);
-            for _ in 0..self.size {
-                subvec.push(BlockType::Nothing);
-            }
-            self.world.push(subvec);
+        self.world.push(Room::new((3, 3), 5, 8));
+    }
+
+    fn to_tilegrid(&self) -> TileGrid {
+        let mut grid = TileGrid::new(self.size);
+
+        for room in self.world {
+            room.tile(&mut grid);
         }
 
-        self.make_room((1, 13), 5, 7);
-        self.make_vertical_corridor((3, 5), 10);
-    }
-
-    fn get_world(&'a self) -> &'a Vec<Vec<BlockType>> {
-        &self.world
-    }
-
-    fn get_item(&'a self, x: usize, y: usize) -> &'a BlockType {
-        &self.world[x][y]
+        grid
     }
 }
 
@@ -115,12 +186,5 @@ mod tests {
     fn test_generates_world() {
         let mut world = World::new(128);
         world.generate();
-
-        assert_eq!(world.get_world().len(), 128);
-        assert_eq!(world.get_world()[0].len(), 128);
-        match world.get_world()[0][0] {
-            BlockType::Nothing => assert!(true),
-            _ => assert!(false)
-        }
     }
 }
