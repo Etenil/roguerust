@@ -4,6 +4,7 @@ use rand::Rng;
 pub enum TileType {
     Empty,
     Wall,
+    Corridor,
     Floor,
 }
 
@@ -38,8 +39,8 @@ impl Tileable for Room {
         let endx = self.start.0 + self.width;
         let endy = self.start.1 + self.height;
 
-        // Draw the walls
-        for x in self.start.0..endx {
+        // Set the walls
+        for x in self.start.0..(endx + 1) {
             grid.set_empty_tile(x, self.start.1, TileType::Wall);
             grid.set_empty_tile(x, endy, TileType::Wall);
         }
@@ -50,8 +51,8 @@ impl Tileable for Room {
         }
 
         // Fill the room
-        for x in (self.start.0 + 1)..(endx) {
-            for y in (self.start.1 + 1)..(endy) {
+        for x in (self.start.0 + 1)..endx {
+            for y in (self.start.1 + 1)..endy {
                 grid.set_tile(x, y, TileType::Floor);
             }
         }
@@ -159,12 +160,12 @@ pub trait GameWorld {
 }
 
 impl World {
-    fn overlaps(&self, start: (usize, usize), width: usize, height: usize) -> bool {
+    fn overlaps(&self, start: (usize, usize), width: usize, height: usize, padding: usize) -> bool {
         for room in &self.world {
-            if room.start.0 < start.0 + width &&
-                room.start.0 + room.width > start.0 &&
-                room.start.1 < start.1 + height &&
-                room.start.1 + room.height > start.1 {
+            if room.start.0 < start.0 + width + padding &&
+                room.start.0 + room.width + padding > start.0 &&
+                room.start.1 < start.1 + height + padding &&
+                room.start.1 + room.height + padding > start.1 {
                 return true;
             }
         }
@@ -180,7 +181,7 @@ impl GameWorld for World {
             world: Vec::new()
         }
     }
-    
+
     fn generate(&mut self) {
         let mut rng = rand::thread_rng();
         let room_number = rng.gen_range(3, 5);
@@ -195,14 +196,14 @@ impl GameWorld for World {
                 rng.gen_range(0, self.size - room_height)
             );
 
-            while self.overlaps(start, room_width, room_height) {
+            while self.overlaps(start, room_width, room_height, 2) {
                 start = (
                     rng.gen_range(0, self.size - room_width),
                     rng.gen_range(0, self.size - room_height)
                 );
             }
 
-            self.world.push(Room::new((3, 3), room_width, room_height));
+            self.world.push(Room::new(start, room_width, room_height));
         }
     }
 

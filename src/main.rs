@@ -19,7 +19,8 @@ use world::{World, GameWorld, TileType};
 fn draw_block(window: &Window, block: &TileType) {
     let repr = match block {
         TileType::Floor => ".",
-        TileType::Wall => "0",
+        TileType::Wall => "█",
+        TileType::Corridor => "#",
         TileType::Empty => " "
     };
 
