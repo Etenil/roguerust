@@ -17,10 +17,35 @@ trait Tileable {
     fn tile(&self, grid: &mut TileGrid) -> Result<(), String>;
 }
 
+const LEFT: (i8, i8) = (-1i8, 0);
+const RIGHT: (i8, i8) = (1i8, 0);
+const UP: (i8, i8) = (0, -1i8);
+const DOWN: (i8, i8) = (0, 1i8);
+
+struct RoomEdge {
+    start: (usize, usize),
+    mid_point: (usize, usize),
+    end: (usize, usize),
+    corridor_dir: (i8, i8)
+}
+
+impl RoomEdge {
+    pub fn new(start: (usize, usize), end: (usize, usize), corridor_dir: (i8, i8)) -> RoomEdge {
+        RoomEdge {
+            start,
+            end,
+            mid_point: (end.0 - start.0 / 2, end.1 - start.1 / 2),
+            corridor_dir
+        }
+    }
+}
+
 struct Room {
     start: (usize, usize),
+    center: (usize, usize),
     width: usize,
-    height: usize
+    height: usize,
+    edges: [RoomEdge; 4]
 }
 
 impl Room {
@@ -28,7 +53,14 @@ impl Room {
         Room {
             start,
             width,
-            height
+            height,
+            center: (start.0 + width / 2, start.1 + height / 2),
+            edges: [
+                RoomEdge::new(start, (start.0 + width, start.1), UP),
+                RoomEdge::new(start, (start.0, start.1 + height), LEFT),
+                RoomEdge::new((start.0, start.1 + height), (start.0 + width, start.1 + height), DOWN),
+                RoomEdge::new((start.0 + width, start.1), (start.0 + width, start.1), RIGHT)
+            ]
         }
     }
 }
@@ -172,6 +204,47 @@ impl World {
 
         return false;
     }
+
+    fn room_distances(&self, point: (usize, usize)) -> Vec<(usize, f32)> {
+        let mut dists: Vec<(usize, f32)> = self.world
+            .iter()
+            .enumerate()
+            .map(|(room_num, room): (usize, &Room)| -> (usize, f32) {
+                (
+                    room_num,
+                    (
+                        ((point.0 - room.center.0) as f32).powf(2.0)
+                        +
+                        ((point.1 - room.center.1) as f32).powf(2.0)
+                    ).sqrt()
+                )
+            })
+            .collect();
+        dists.sort_by(|(_, dista): &(usize, f32), (_, distb): &(usize, f32)| dista.partial_cmp(&distb).unwrap());
+        dists
+    }
+
+    fn random_room(&self) -> Result<Room, String> {
+        // TODO: Detect when not enough space is left to allocate a room.
+        let mut rng = rand::thread_rng();
+        let room_width = rng.gen_range(3, 6);
+        let room_height = rng.gen_range(3, 6);
+
+        // TODO: Find a way to write a lambda to generate the start point.
+        let mut start: (usize, usize) = (
+            rng.gen_range(0, self.size - room_width),
+            rng.gen_range(0, self.size - room_height)
+        );
+
+        while self.overlaps(start, room_width, room_height, 2) {
+            start = (
+                rng.gen_range(0, self.size - room_width),
+                rng.gen_range(0, self.size - room_height)
+            );
+        }
+
+        Ok(Room::new(start, room_width, room_height))
+    }
 }
 
 impl GameWorld for World {
@@ -187,23 +260,7 @@ impl GameWorld for World {
         let room_number = rng.gen_range(3, 5);
 
         for _ in 0..room_number {
-            let room_width = rng.gen_range(3, 6);
-            let room_height = rng.gen_range(3, 6);
-
-            // TODO find a way to write a lambda to generate the start point.
-            let mut start: (usize, usize) = (
-                rng.gen_range(0, self.size - room_width),
-                rng.gen_range(0, self.size - room_height)
-            );
-
-            while self.overlaps(start, room_width, room_height, 2) {
-                start = (
-                    rng.gen_range(0, self.size - room_width),
-                    rng.gen_range(0, self.size - room_height)
-                );
-            }
-
-            self.world.push(Room::new(start, room_width, room_height));
+            self.world.push(self.random_room().unwrap());
         }
     }
 
@@ -212,6 +269,17 @@ impl GameWorld for World {
 
         for room in &self.world {
             room.tile(&mut grid).unwrap();
+        }
+
+        for room in &self.world {
+            // Find the nearest room.
+            let distances = self.room_distances(room.center);
+            let nearest_room = &self.world[distances[1].0];
+            let mut corridor_start: (usize, usize);
+
+            for edge in room.edges {
+
+            }
         }
 
         grid

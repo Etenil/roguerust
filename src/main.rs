@@ -24,8 +24,6 @@ fn draw_block(window: &Window, block: &TileType) {
         TileType::Empty => " "
     };
 
-    print!("{}", repr);
-
     window.printw(repr);
 }
 
@@ -37,12 +35,11 @@ fn render_world(window: &Window, world: &World) {
             draw_block(&window, block);
         }
         window.mv(linenum as i32, 0);
-        println!("");
     }
 }
 
 fn main() {
-    let mut world = World::new(30);
+    let mut world = World::new(24);
     world.generate();
 
     let window = initscr();
