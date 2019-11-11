@@ -276,10 +276,6 @@ impl GameWorld for World {
             let distances = self.room_distances(room.center);
             let nearest_room = &self.world[distances[1].0];
             let mut corridor_start: (usize, usize);
-
-            for edge in room.edges {
-
-            }
         }
 
         grid
