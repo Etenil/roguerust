@@ -6,8 +6,9 @@ type Point = (usize, usize);
 pub enum TileType {
     Empty,
     Wall,
-    Corridor,
     Floor,
+    StairsUp,
+    StairsDown
 }
 
 enum CorridorType {
@@ -126,7 +127,7 @@ impl Corridor {
         for x in self.start.0..endx {
             grid.set_empty_tile(x, y - 1, TileType::Wall);
             grid.set_tile(x, y, TileType::Floor);
-            grid.set_empty_tile(x, y - 1, TileType::Wall);
+            grid.set_empty_tile(x, y + 1, TileType::Wall);
         }
     }
 }
@@ -147,14 +148,14 @@ pub struct TileGrid {
 }
 
 impl<'a> TileGrid {
-    pub fn new(size: usize) -> TileGrid {
+    pub fn new(xsize: usize, ysize: usize) -> TileGrid {
         let mut grid = TileGrid {
-            grid: Vec::with_capacity(size)
+            grid: Vec::with_capacity(ysize)
         };
 
-        for _ in 0..size {
-            let mut subvec = Vec::with_capacity(size);
-            for _ in 0..size {
+        for _ in 0..ysize {
+            let mut subvec = Vec::with_capacity(xsize);
+            for _ in 0..xsize {
                 subvec.push(TileType::Empty);
             }
             grid.grid.push(subvec);
@@ -181,17 +182,18 @@ impl<'a> TileGrid {
 }
 
 pub struct World {
-    size: usize,
+    xsize: usize,
+    ysize: usize,
     rooms: Vec<Room>,
     corridors: Vec<Corridor>
 }
 
 pub trait GameWorld {
-    fn new(size: usize) -> Self;
+    fn new(xsize: usize, ysize: usize) -> Self;
 
     fn generate(&mut self);
 
-    fn to_tilegrid(&self) -> TileGrid;
+    fn to_tilegrid(&self) -> Result<TileGrid, String>;
 }
 
 fn hor_dist(point1: Point, point2: Point) -> f32 {
@@ -240,19 +242,19 @@ impl World {
     fn random_room(&self) -> Result<Room, String> {
         // TODO: Detect when not enough space is left to allocate a room.
         let mut rng = rand::thread_rng();
-        let room_width = rng.gen_range(3, 6);
-        let room_height = rng.gen_range(3, 6);
+        let room_width = rng.gen_range(3, 12);
+        let room_height = rng.gen_range(3, 12);
 
         // TODO: Find a way to write a lambda to generate the start point.
         let mut start: Point = (
-            rng.gen_range(0, self.size - room_width),
-            rng.gen_range(0, self.size - room_height)
+            rng.gen_range(0, self.xsize - room_width),
+            rng.gen_range(0, self.ysize - room_height)
         );
 
         while self.overlaps(start, room_width, room_height, 2) {
             start = (
-                rng.gen_range(0, self.size - room_width),
-                rng.gen_range(0, self.size - room_height)
+                rng.gen_range(0, self.xsize - room_width),
+                rng.gen_range(0, self.ysize - room_height)
             );
         }
 
@@ -261,9 +263,10 @@ impl World {
 }
 
 impl GameWorld for World {
-    fn new(size: usize) -> World {
+    fn new(xsize: usize, ysize: usize) -> World {
         World {
-            size,
+            xsize,
+            ysize,
             rooms: Vec::new(),
             corridors: Vec::new()
         }
@@ -273,35 +276,60 @@ impl GameWorld for World {
         let mut rng = rand::thread_rng();
         let room_number = rng.gen_range(3, 5);
 
+        // Generate rooms
         for _ in 0..room_number {
             self.rooms.push(self.random_room().unwrap());
         }
 
+        // Generate corridors
         for room in &self.rooms {
             // Find the nearest room.
             let distances = self.room_distances(room.center);
             let nearest_room = &self.rooms[distances[1].0];
 
+            let mut xorigin = room.center;
+            let xlength = hor_dist(room.center, nearest_room.center);
+            if xlength < 0f32 {
+                xorigin = nearest_room.center;
+            }
+
             self.corridors.push(Corridor::new(
-                room.center,
-                hor_dist(room.center, nearest_room.center) as usize,
+                xorigin,
+                xlength.abs() as usize,
                 CorridorType::Horizontal
+            ));
+
+            let angle_point = (xorigin.0 + xlength.abs() as usize, xorigin.1);
+            let mut destination = nearest_room;
+            if destination.center.1 == angle_point.1 {
+                destination = room
+            }
+            let mut yorigin = angle_point;
+            let ylength = ver_dist(yorigin, destination.center);
+            if ylength < 0f32 {
+                yorigin = destination.center;
+            }
+
+            self.corridors.push(Corridor::new(
+                yorigin,
+                ylength.abs() as usize,
+                CorridorType::Vertical
             ));
         }
     }
 
-    fn to_tilegrid(&self) -> TileGrid {
-        let mut grid = TileGrid::new(self.size);
+    fn to_tilegrid(&self) -> Result<TileGrid, String> {
+        let mut grid = TileGrid::new(self.xsize, self.ysize);
 
         for room in &self.rooms {
-            room.tile(&mut grid).unwrap();
+            room.tile(&mut grid)?;
         }
 
         for corridor in &self.corridors {
-            // todo
+            corridor.tile(&mut grid)?;
         }
 
-        grid
+        Ok(grid)
     }
 }
 
@@ -311,7 +339,7 @@ mod tests {
 
     #[test]
     fn test_generates_world() {
-        let mut world = World::new(128);
+        let mut world = World::new(128, 128);
         world.generate();
     }
 }
