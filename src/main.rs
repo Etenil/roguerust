@@ -9,6 +9,7 @@ mod computer;
 mod world;
 
 use character::Player;
+use character::Character;
 use computer::Enemy;
 use pancurses::{Window, initscr, endwin};
 use rand::Rng;
@@ -56,6 +57,19 @@ fn debug_world(world: &World) {
 fn main() {
     let mut world = World::new(80, 24);
     world.generate();
+
+    let start_location = world.get_start_location();
+
+    let mut character: Character = Character::new(
+        "Kshar".to_string(),
+        "Warror".to_string(),
+        30,
+        10,
+        10,
+        20,
+        start_location
+    );
+    character.place(start_location);
 
     debug_world(&world);
 

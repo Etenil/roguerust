@@ -1,6 +1,6 @@
 use rand::Rng;
 
-type Point = (usize, usize);
+pub type Point = (usize, usize);
 
 #[derive(Clone)]
 pub enum TileType {
@@ -193,7 +193,13 @@ pub trait GameWorld {
 
     fn generate(&mut self);
 
+<<<<<<< Updated upstream
     fn to_tilegrid(&self) -> Result<TileGrid, String>;
+=======
+    fn to_tilegrid(&self) -> TileGrid;
+
+    fn get_start_location(&self) -> Point;
+>>>>>>> Stashed changes
 }
 
 fn hor_dist(point1: Point, point2: Point) -> f32 {
@@ -330,6 +336,13 @@ impl GameWorld for World {
         }
 
         Ok(grid)
+    }
+
+    fn get_start_location(&self) -> Point {
+        if self.rooms.len() > 0 {
+            return self.rooms[0].center;
+        }
+        return (0,0)
     }
 }
 
