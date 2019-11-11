@@ -1,5 +1,7 @@
 use rand::Rng;
 
+type Point = (usize, usize);
+
 #[derive(Clone)]
 pub enum TileType {
     Empty,
@@ -23,14 +25,14 @@ const UP: (i8, i8) = (0, -1i8);
 const DOWN: (i8, i8) = (0, 1i8);
 
 struct RoomEdge {
-    start: (usize, usize),
-    mid_point: (usize, usize),
-    end: (usize, usize),
+    start: Point,
+    mid_point: Point,
+    end: Point,
     corridor_dir: (i8, i8)
 }
 
 impl RoomEdge {
-    pub fn new(start: (usize, usize), end: (usize, usize), corridor_dir: (i8, i8)) -> RoomEdge {
+    pub fn new(start: Point, end: Point, corridor_dir: (i8, i8)) -> RoomEdge {
         RoomEdge {
             start,
             end,
@@ -41,15 +43,15 @@ impl RoomEdge {
 }
 
 struct Room {
-    start: (usize, usize),
-    center: (usize, usize),
+    start: Point,
+    center: Point,
     width: usize,
     height: usize,
     edges: [RoomEdge; 4]
 }
 
 impl Room {
-    fn new(start: (usize, usize), width: usize, height: usize) -> Room {
+    fn new(start: Point, width: usize, height: usize) -> Room {
         Room {
             start,
             width,
@@ -94,13 +96,13 @@ impl Tileable for Room {
 }
 
 struct Corridor {
-    start: (usize, usize),
+    start: Point,
     length: usize,
     direction: CorridorType
 }
 
 impl Corridor {
-    fn new(start: (usize, usize), length: usize, direction: CorridorType) -> Corridor {
+    fn new(start: Point, length: usize, direction: CorridorType) -> Corridor {
         Corridor {
             start,
             length,
@@ -180,7 +182,8 @@ impl<'a> TileGrid {
 
 pub struct World {
     size: usize,
-    world: Vec<Room>
+    rooms: Vec<Room>,
+    corridors: Vec<Corridor>
 }
 
 pub trait GameWorld {
@@ -191,9 +194,26 @@ pub trait GameWorld {
     fn to_tilegrid(&self) -> TileGrid;
 }
 
+fn hor_dist(point1: Point, point2: Point) -> f32 {
+    point2.0 as f32 - point1.0 as f32
+}
+
+fn ver_dist(point1: Point, point2: Point) -> f32 {
+    point2.1 as f32 - point1.1 as f32
+}
+
+/// The distance between 2 points
+fn distance(point1: Point, point2: Point) -> f32 {
+    (
+        hor_dist(point1, point2).powf(2.0)
+        +
+        ver_dist(point1, point2).powf(2.0)
+    ).sqrt()
+}
+
 impl World {
-    fn overlaps(&self, start: (usize, usize), width: usize, height: usize, padding: usize) -> bool {
-        for room in &self.world {
+    fn overlaps(&self, start: Point, width: usize, height: usize, padding: usize) -> bool {
+        for room in &self.rooms {
             if room.start.0 < start.0 + width + padding &&
                 room.start.0 + room.width + padding > start.0 &&
                 room.start.1 < start.1 + height + padding &&
@@ -205,19 +225,12 @@ impl World {
         return false;
     }
 
-    fn room_distances(&self, point: (usize, usize)) -> Vec<(usize, f32)> {
-        let mut dists: Vec<(usize, f32)> = self.world
+    fn room_distances(&self, point: Point) -> Vec<(usize, f32)> {
+        let mut dists: Vec<(usize, f32)> = self.rooms
             .iter()
             .enumerate()
             .map(|(room_num, room): (usize, &Room)| -> (usize, f32) {
-                (
-                    room_num,
-                    (
-                        ((point.0 - room.center.0) as f32).powf(2.0)
-                        +
-                        ((point.1 - room.center.1) as f32).powf(2.0)
-                    ).sqrt()
-                )
+                (room_num, distance(point, room.center))
             })
             .collect();
         dists.sort_by(|(_, dista): &(usize, f32), (_, distb): &(usize, f32)| dista.partial_cmp(&distb).unwrap());
@@ -231,7 +244,7 @@ impl World {
         let room_height = rng.gen_range(3, 6);
 
         // TODO: Find a way to write a lambda to generate the start point.
-        let mut start: (usize, usize) = (
+        let mut start: Point = (
             rng.gen_range(0, self.size - room_width),
             rng.gen_range(0, self.size - room_height)
         );
@@ -251,7 +264,8 @@ impl GameWorld for World {
     fn new(size: usize) -> World {
         World {
             size,
-            world: Vec::new()
+            rooms: Vec::new(),
+            corridors: Vec::new()
         }
     }
 
@@ -260,23 +274,32 @@ impl GameWorld for World {
         let room_number = rng.gen_range(3, 5);
 
         for _ in 0..room_number {
-            self.world.push(self.random_room().unwrap());
+            self.rooms.push(self.random_room().unwrap());
+        }
+
+        for room in &self.rooms {
+            // Find the nearest room.
+            let distances = self.room_distances(room.center);
+            let nearest_room = &self.rooms[distances[1].0];
+
+            self.corridors.push(Corridor::new(
+                room.center,
+                hor_dist(room.center, nearest_room.center) as usize,
+                CorridorType::Horizontal
+            ));
         }
     }
 
     fn to_tilegrid(&self) -> TileGrid {
         let mut grid = TileGrid::new(self.size);
 
-        for room in &self.world {
+        for room in &self.rooms {
             room.tile(&mut grid).unwrap();
         }
 
-        // for room in &self.world {
-        //     // Find the nearest room.
-        //     let distances = self.room_distances(room.center);
-        //     let nearest_room = &self.world[distances[1].0];
-        //     let mut corridor_start: (usize, usize);
-        // }
+        for corridor in &self.corridors {
+            // todo
+        }
 
         grid
     }

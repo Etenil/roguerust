@@ -38,16 +38,35 @@ fn render_world(window: &Window, world: &World) {
     }
 }
 
+fn debug_world(world: &World) {
+    let grid = world.to_tilegrid();
+
+    for (line) in grid.raw_data().iter() {
+        for block in line.iter() {
+            print!("{}", match block {
+                TileType::Floor => ".",
+                TileType::Wall => "█",
+                TileType::Corridor => "#",
+                TileType::Empty => " ",
+                _ => "?"
+            });
+        }
+        print!("\n");
+    }
+}
+
 fn main() {
     let mut world = World::new(24);
     world.generate();
 
-    let window = initscr();
+    debug_world(&world);
 
-    render_world(&window, &world);
+    // let window = initscr();
 
-    window.refresh();
+    // render_world(&window, &world);
 
-    window.getch();
-    endwin();
+    // window.refresh();
+
+    // window.getch();
+    // endwin();
 }
