@@ -271,12 +271,12 @@ impl GameWorld for World {
             room.tile(&mut grid).unwrap();
         }
 
-        for room in &self.world {
-            // Find the nearest room.
-            let distances = self.room_distances(room.center);
-            let nearest_room = &self.world[distances[1].0];
-            let mut corridor_start: (usize, usize);
-        }
+        // for room in &self.world {
+        //     // Find the nearest room.
+        //     let distances = self.room_distances(room.center);
+        //     let nearest_room = &self.world[distances[1].0];
+        //     let mut corridor_start: (usize, usize);
+        // }
 
         grid
     }
