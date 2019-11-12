@@ -17,7 +17,7 @@ use pancurses::{
     noecho
 };
 use state::State;
-use world::Dungeon;
+use world::{Dungeon};
 
 
 fn main() {
@@ -31,6 +31,7 @@ fn main() {
             10,
             10,
             20,
+            1,
             (0, 0)
         ),
         Dungeon::new(window.get_max_x() as usize, window.get_max_y() as usize, 5),
@@ -38,18 +39,16 @@ fn main() {
 
     state.init();
 
-    // Dump the whole dungeon structure in terminal for debugging
-    state.debug();
-
-    state.render_level(&window);
-
     window.keypad(true);
     noecho();
-
+    
     loop {
         // update actors
+        
+        state.render_level(&window);
+
         // update character
-        window.refresh();
+        state.show_character(&window);
 
         // get input and execute it
         match window.getch() {
@@ -63,6 +62,7 @@ fn main() {
             Some(_) => (),
             None => (),
         }
+        // actors actions (normally attack / interact if on same location as the character)
     }
     endwin();
 }
