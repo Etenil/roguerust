@@ -1,7 +1,7 @@
 use rand::Rng;
 use pancurses::{Window};
 use crate::entities::{Entity};
-use crate::tiling::{TileGrid, Tileable, TileType};
+use crate::tiling::{TileGrid, Tileable, TileType, draw_block};
 
 pub type Point = (usize, usize);
 
@@ -187,23 +187,6 @@ impl Dungeon {
             levels: vec![]
         }
     }
-
-    pub fn debug_levels(&self) {
-        for l in &self.levels {
-            Dungeon::debug_level(l);
-        }
-    }
-
-    fn debug_level(level: &Level) {
-        let grid = level.to_tilegrid().unwrap();
-
-        for line in grid.raw_data().iter() {
-            for block in line.iter() {
-                print!("{}", Dungeon::tile_to_str(block));
-            }
-            print!("\n");
-        }
-    }
 }
 
 impl Generatable for Dungeon {
@@ -270,7 +253,7 @@ impl Level {
 
         for (linenum, line) in grid.raw_data().iter().enumerate() {
             for block in line.iter() {
-                Dungeon::draw_block(&window, &block);
+                draw_block(&window, &block);
             }
             window.mv(linenum as i32, 0);
         }

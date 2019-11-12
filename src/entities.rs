@@ -1,5 +1,6 @@
 use std::cmp;
 
+use pancurses::{Window};
 use crate::world::{Point};
 use crate::tiling::TileType;
 
@@ -21,6 +22,10 @@ pub struct Character {
     luck: i32,
     xp: i32,
     tile_type: TileType
+}
+
+pub trait Render {
+    fn render(&self, window: &Window);
 }
 
 pub trait Enemy {
@@ -52,6 +57,23 @@ pub trait Player {
     fn attack(&self) -> i32;
     fn dodge(&self) -> i32;
     fn stats(&self) -> String;
+}
+
+impl Render for Character {
+    fn render(&self, window: &Window) {
+    //     window.mv(window.get_max_y() - 2, 0);
+    //     window.clrtoeol();
+        
+    //     window.refresh();
+
+    //     window.addstr(self.character.info() + "\n");
+
+    //     window.mv(self.character.location.1 as i32,self.character.location.0 as i32);
+    //     window.refresh();
+    //     draw_block(&window, self.character.tile_type);
+    //     window.refresh();
+
+    }
 }
 
 impl Entity for Character {

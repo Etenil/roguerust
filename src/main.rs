@@ -39,9 +39,6 @@ fn main() {
 
     state.init();
 
-    // Dump the whole dungeon structure in terminal for debugging
-    state.debug();
-
     window.keypad(true);
     noecho();
     
@@ -52,7 +49,7 @@ fn main() {
 
         // update character
         state.show_character(&window);
-        
+
         // get input and execute it
         match window.getch() {
 

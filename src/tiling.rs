@@ -53,7 +53,7 @@ fn tile_to_str(tile: &TileType) -> &str {
     }
 }
 
-fn draw_block(window: &Window, block: &TileType) {
+pub fn draw_block(window: &Window, block: &TileType) {
     window.printw(tile_to_str(block));
 }
 
