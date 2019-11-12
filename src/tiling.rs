@@ -1,3 +1,8 @@
+extern crate pancurses;
+
+use pancurses::{Window};
+
+
 pub struct TileGrid {
     grid: Vec<Vec<TileType>>
 }
@@ -34,6 +39,22 @@ impl<'a> TileGrid {
     pub fn raw_data(&'a self) -> &'a Vec<Vec<TileType>> {
         &self.grid
     }
+}
+
+fn tile_to_str(tile: &TileType) -> &str {
+    match tile {
+        TileType::Floor => ".",
+        TileType::Wall => "#",
+        TileType::Empty => " ",
+        TileType::StairsDown => ">",
+        TileType::StairsUp => "<",
+        TileType::Player => "@",
+        _ => "?"
+    }
+}
+
+fn draw_block(window: &Window, block: &TileType) {
+    window.printw(tile_to_str(block));
 }
 
 pub trait Tileable {

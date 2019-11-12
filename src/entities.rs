@@ -1,6 +1,6 @@
 use std::cmp;
 
-use crate::world::{Point, Direction};
+use crate::world::{Point};
 use crate::tiling::TileType;
 
 pub trait Entity {
@@ -30,7 +30,6 @@ pub trait Enemy {
         attack: i32,
         dodge: i32,
         luck: i32,
-        level: i32,
         location: Point
     ) -> Self;
 
@@ -75,9 +74,9 @@ impl Enemy for Character {
         attack: i32,
         dodge: i32,
         luck: i32,
-        level: i32,
         location: Point
     ) -> Character {
+        Character {
             name: class.clone(),
             class: class.clone(),
             max_health: health,
@@ -85,9 +84,11 @@ impl Enemy for Character {
             attack,
             dodge,
             luck,
+            level: 0,
             xp: 0,
             location: location,
             tile_type: TileType::Character
+        }
     }
 
     fn set_tile_type(&mut self, tile_type: TileType) {
@@ -143,8 +144,8 @@ impl Player for Character {
 
     fn stats(&self) -> String {
         format!(
-            "{} - hp: {} attack: {} dodge: {} luck: {} experience: {}",
-            self.class, self.health, self.attack, self.dodge, self.luck, self.xp
+            "{} - hp: {}/{} attack: {} dodge: {} luck: {} experience: {}",
+            self.class, self.health, self.max_health, self.attack, self.dodge, self.luck, self.xp
         )
     }
 }
@@ -154,8 +155,8 @@ mod tests {
     use super::*;
 
     fn test_attack() {
-        let player: Character = Player::new("".to_string(), "Rogue".to_string(), 1, 4, 1, 4, 0, (0,0));
+        let bob: Character = Enemy::new("Rogue".to_string(), 1, 4, 1, 4, (0, 0));
 
-        assert_eq!(player.attack(), 6);
+        assert_eq!(bob.attack(), 6);
     }
 }

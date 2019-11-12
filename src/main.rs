@@ -4,90 +4,55 @@ extern crate pancurses;
 #[macro_use]
 extern crate text_io;
 
+mod state;
 mod entities;
 mod world;
 mod tiling;
 
-use entities::{Character, Player, Entity};
-use pancurses::{Window, initscr, endwin, Input, noecho};
-use world::{Dungeon, Level, Generatable};
-use tiling::TileType;
+use entities::Player;
+use pancurses::{
+    initscr,
+    endwin,
+    Input,
+    noecho
+};
+use state::State;
+use world::{Dungeon};
 
-fn tile_to_str(tile: &TileType) -> &str {
-    match tile {
-        TileType::Floor => ".",
-        TileType::Wall => "#",
-        TileType::Empty => " ",
-        TileType::StairsDown => ">",
-        TileType::StairsUp => "<",
-        TileType::Character => "@",
-        _ => "?"
-    }
-}
-
-fn draw_block(window: &Window, block: &TileType) {
-    window.printw(tile_to_str(block));
-}
-
-fn render_level(window: &Window, level: &Level) {
-    let grid = level.to_tilegrid().unwrap();
-
-    for (linenum, line) in grid.raw_data().iter().enumerate() {
-        for block in line.iter() {
-            draw_block(&window, block);
-        }
-        window.mv(linenum as i32, 0);
-    }
-}
 
 fn main() {
     let window = initscr();
-    let mut level = 0;
 
-    let mut dungeon = Dungeon::new(
-        window.get_max_x() as usize,
-        window.get_max_y() as usize - 2, // allow 2 lines for game stats
-        5
+    let mut state = State::new(
+        Player::new(
+            "Kshar".to_string(),
+            "Warrior".to_string(),
+            30,
+            10,
+            10,
+            20,
+            1,
+            (0, 0)
+        ),
+        Dungeon::new(window.get_max_x() as usize, window.get_max_y() as usize, 5),
     );
 
-    dungeon.generate();
+    state.init();
 
-    let start_location = dungeon.levels[0].get_start_point();
-
-    let mut character: Character = Character::new(
-        "Kshar".to_string(),
-        "Warror".to_string(),
-        30,
-        10,
-        10,
-        20,
-        0,
-        start_location
-    );
-
-    render_level(&window, &dungeon.levels[0]);
+    // Dump the whole dungeon structure in terminal for debugging
+    state.debug();
 
     window.keypad(true);
     noecho();
-
+    
     loop {
         // update actors
-
+        
+        state.render_level(&window);
 
         // update character
-        window.mv(window.get_max_y() - 2, 0);
-        window.clrtoeol();
+        state.show_character(&window);
         
-        window.refresh();
-
-        window.addstr(character.stats() + "\n");
-        window.addstr(character.info() + "\n");
-
-        window.mv(character.location.1 as i32,character.location.0 as i32);
-        window.refresh();
-        draw_block(&window, &world::TileType::Character);
-        window.refresh();
-
         // get input and execute it
         match window.getch() {
 

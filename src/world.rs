@@ -1,6 +1,9 @@
 use rand::Rng;
+use pancurses::{Window};
 use crate::entities::{Entity};
 use crate::tiling::{TileGrid, Tileable, TileType};
+
+pub type Point = (usize, usize);
 
 pub enum Direction {
     North,
@@ -8,8 +11,6 @@ pub enum Direction {
     East,
     West
 }
-
-pub type Point = (usize, usize);
 
 enum CorridorType {
     Horizontal,
@@ -53,7 +54,7 @@ impl Room {
             start,
             width,
             height,
-            center: (start.0 + width / 2, start.1 + height / 2),
+            center: (start.0 + (width as f32 / 2.0) as usize, start.1 + (height as f32 / 2.0) as usize),
             edges: [
                 RoomEdge::new(start, (start.0 + width, start.1), UP),
                 RoomEdge::new(start, (start.0, start.1 + height), LEFT),
@@ -186,6 +187,23 @@ impl Dungeon {
             levels: vec![]
         }
     }
+
+    pub fn debug_levels(&self) {
+        for l in &self.levels {
+            Dungeon::debug_level(l);
+        }
+    }
+
+    fn debug_level(level: &Level) {
+        let grid = level.to_tilegrid().unwrap();
+
+        for line in grid.raw_data().iter() {
+            for block in line.iter() {
+                print!("{}", Dungeon::tile_to_str(block));
+            }
+            print!("\n");
+        }
+    }
 }
 
 impl Generatable for Dungeon {
@@ -223,7 +241,7 @@ impl Level {
         }
     }
 
-    pub fn to_tilegrid(&self) -> Result<TileGrid, String> {
+    fn to_tilegrid(&self) -> Result<TileGrid, String> {
         let mut grid = TileGrid::new(self.xsize, self.ysize);
 
         for room in &self.rooms {
@@ -245,6 +263,17 @@ impl Level {
             return self.rooms[0].center;
         }
         return (0,0)
+    }
+
+    pub fn render(&self, window: &Window) {
+        let grid = self.to_tilegrid().unwrap();
+
+        for (linenum, line) in grid.raw_data().iter().enumerate() {
+            for block in line.iter() {
+                Dungeon::draw_block(&window, &block);
+            }
+            window.mv(linenum as i32, 0);
+        }
     }
 
     pub fn get_entrance(&self) -> Point {
