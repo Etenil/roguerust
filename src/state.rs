@@ -1,5 +1,4 @@
 use pancurses::Window;
-use std::env;
 
 use crate::entities::{Character, Entity, Render};
 use crate::world::{Dungeon, Generatable, Level};
@@ -32,7 +31,7 @@ impl State {
     }
 
     pub fn show_character(&self, window: &Window) {
-        self.character.render(window);
+        self.player.render(window);
     }
 
     fn current_level(&self) -> &Level {

@@ -16,16 +16,23 @@ use pancurses::{
     Input,
     noecho
 };
+use std::env;
 use state::State;
 use world::{Dungeon};
 
+fn get_player_name() -> String {
+    match env::var_os("USER") {
+        Some(val) => val.into_string().unwrap(),
+        None => String::from("Kshar")
+    }
+}
 
 fn main() {
     let window = initscr();
 
     let mut state = State::new(
         Player::new(
-            "Kshar".to_string(),
+            get_player_name(),
             "Warrior".to_string(),
             30,
             10,
