@@ -1,7 +1,6 @@
 extern crate rand;
 extern crate pancurses;
 
-#[macro_use]
 extern crate text_io;
 
 mod state;
@@ -31,28 +30,26 @@ fn main() {
             10,
             10,
             20,
-            1,
-            (0, 0)
+            1
         ),
-        Dungeon::new(window.get_max_x() as usize, window.get_max_y() as usize, 5),
+        Dungeon::new(window.get_max_x() as usize, (window.get_max_y() - 2) as usize, 5),
     );
 
     state.init();
 
     window.keypad(true);
     noecho();
-    
-    loop {
-        // update actors
-        
-        state.render_level(&window);
 
-        // update character
-        state.show_character(&window);
+    state.render_level(&window);
+
+    loop {
+        // update
+        state.render_entities(&window);
+
+        state.render_player(&window);
 
         // get input and execute it
         match window.getch() {
-
             Some(Input::Character('h')) => { window.addstr("q: quit\n"); },
             // Some(Input::KeyDown) => { window.addstr("down\n"); },
             // Some(Input::KeyUp) => { window.addch('b'); },

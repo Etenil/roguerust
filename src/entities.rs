@@ -7,6 +7,8 @@ use crate::tiling::TileType;
 pub trait Entity {
     fn info(&self) -> String;
     fn place(&mut self, location: Point);
+    fn get_tiletype(&self) -> &TileType;
+    fn get_location(&self) -> &Point;
 }
 
 #[derive(Clone)]
@@ -22,10 +24,6 @@ pub struct Character {
     luck: i32,
     xp: i32,
     tile_type: TileType
-}
-
-pub trait Render {
-    fn render(&self, window: &Window);
 }
 
 pub trait Enemy {
@@ -49,31 +47,13 @@ pub trait Player {
         attack: i32,
         dodge: i32,
         luck: i32,
-        level: i32,
-        location: Point
+        level: i32
     ) -> Self;
     fn damage(&mut self, damage_amount: i32);
     fn heal(&mut self, heal_amount: i32);
     fn attack(&self) -> i32;
     fn dodge(&self) -> i32;
     fn stats(&self) -> String;
-}
-
-impl Render for Character {
-    fn render(&self, window: &Window) {
-    //     window.mv(window.get_max_y() - 2, 0);
-    //     window.clrtoeol();
-        
-    //     window.refresh();
-
-    //     window.addstr(self.character.info() + "\n");
-
-    //     window.mv(self.character.location.1 as i32,self.character.location.0 as i32);
-    //     window.refresh();
-    //     draw_block(&window, self.character.tile_type);
-    //     window.refresh();
-
-    }
 }
 
 impl Entity for Character {
@@ -86,6 +66,14 @@ impl Entity for Character {
             "{} \thp: {} attack: {} dodge: {} luck: {}",
             self.class, self.health, self.attack, self.dodge, self.luck
         )
+    }
+
+    fn get_tiletype(&self) -> &TileType {
+        &self.tile_type
+    }
+
+    fn get_location(&self) -> &Point {
+        &self.location
     }
 }
 
@@ -126,8 +114,7 @@ impl Player for Character {
         attack: i32,
         dodge: i32,
         luck: i32,
-        level: i32,
-        location: Point
+        level: i32
     ) -> Character {
         Character {
             name: name,
@@ -139,7 +126,7 @@ impl Player for Character {
             luck: luck,
             xp: 0,
             level: 0,
-            location: location,
+            location: (0, 0),
             tile_type: TileType::Player
         }
     }
