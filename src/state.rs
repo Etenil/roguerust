@@ -48,7 +48,9 @@ impl State {
     }
 
     pub fn render_entities(&self, window: &Window) {
-        // TODO
+        for e in self.current_level().entities.iter() {
+            self.render_entity(&**e, window);
+        }
     }
 
     pub fn render_player(&self, window: &Window) {
