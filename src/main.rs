@@ -4,16 +4,14 @@ extern crate pancurses;
 #[macro_use]
 extern crate text_io;
 
-mod character;
-mod computer;
+mod entities;
 mod world;
+mod tiling;
 
-use std::env;
-use character::Player;
-use character::Character;
-use computer::Enemy;
+use entities::{Character, Player, Entity};
 use pancurses::{Window, initscr, endwin, Input, noecho};
-use world::{Dungeon, Level, Generable, TileType};
+use world::{Dungeon, Level, Generatable};
+use tiling::TileType;
 
 fn tile_to_str(tile: &TileType) -> &str {
     match tile {
@@ -41,18 +39,6 @@ fn render_level(window: &Window, level: &Level) {
         window.mv(linenum as i32, 0);
     }
 }
-
-fn debug_level(level: Level) {
-    let grid = level.to_tilegrid().unwrap();
-
-    for line in grid.raw_data().iter() {
-        for block in line.iter() {
-            print!("{}", tile_to_str(block));
-        }
-        print!("\n");
-    }
-}
-
 
 fn main() {
     let window = initscr();
