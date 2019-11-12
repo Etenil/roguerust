@@ -60,9 +60,10 @@ fn main() {
 
     let mut dungeon = Dungeon::new(
         window.get_max_x() as usize,
-        window.get_max_y() as usize - 2,
+        window.get_max_y() as usize - 2, // allow 2 lines for game stats
         5
     );
+
     dungeon.generate();
 
     let start_location = dungeon.levels[0].get_start_point();
@@ -74,9 +75,9 @@ fn main() {
         10,
         10,
         20,
+        0,
         start_location
     );
-    character.place(start_location);
 
     render_level(&window, &dungeon.levels[0]);
 
@@ -85,7 +86,20 @@ fn main() {
 
     loop {
         // update actors
+
+
         // update character
+        window.mv(window.get_max_y() - 2, 0);
+        window.clrtoeol();
+        
+        window.refresh();
+
+        window.addstr(character.stats() + "\n");
+        window.addstr(character.info() + "\n");
+
+        window.mv(character.location.1 as i32,character.location.0 as i32);
+        window.refresh();
+        draw_block(&window, &world::TileType::Character);
         window.refresh();
 
         // get input and execute it
@@ -100,6 +114,7 @@ fn main() {
             Some(_) => (),
             None => (),
         }
+        // actors actions (normally attack / interact if on same location as the character)
     }
     endwin();
 }

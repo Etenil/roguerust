@@ -6,12 +6,13 @@ pub struct Character {
     pub name: String,
     pub class: String,
     pub health: i32,
+    pub level: i32,
+    pub location: Point,
     max_health: i32,
     attack: i32,
     dodge: i32,
     luck: i32,
     xp: i32,
-    location: Point
 }
 
 pub trait Player {
@@ -22,6 +23,7 @@ pub trait Player {
         attack: i32,
         dodge: i32,
         luck: i32,
+        level: i32,
         location: Point
     ) -> Character;
 
@@ -59,6 +61,7 @@ impl Player for Character {
         attack: i32,
         dodge: i32,
         luck: i32,
+        level: i32,
         location: Point
     ) -> Character {
         Character {
@@ -70,6 +73,7 @@ impl Player for Character {
             dodge: dodge,
             luck: luck,
             xp: 0,
+            level: 0,
             location: location
         }
     }
@@ -86,6 +90,7 @@ impl Player for Character {
             self.attack,
             self.dodge,
             self.luck + player_luck,
+            0,
             (0,0)
         )
     }
@@ -139,7 +144,7 @@ mod tests {
     use super::*;
 
     fn test_attack() {
-        let player = Character::new("".to_string(), "Rogue".to_string(), 1, 4, 1, 4, (0,0));
+        let player = Character::new("".to_string(), "Rogue".to_string(), 1, 4, 1, 4, 0,(0,0));
 
         assert_eq!(player.attack(), 6);
     }
