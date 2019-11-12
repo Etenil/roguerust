@@ -2,7 +2,7 @@ pub struct TileGrid {
     grid: Vec<Vec<TileType>>
 }
 
-impl<'a> TileGrid {
+impl TileGrid {
     pub fn new(xsize: usize, ysize: usize) -> TileGrid {
         let mut grid = TileGrid {
             grid: Vec::with_capacity(ysize)
@@ -31,7 +31,7 @@ impl<'a> TileGrid {
         })
     }
 
-    pub fn raw_data(&'a self) -> &'a Vec<Vec<TileType>> {
+    pub fn raw_data(& self) -> & Vec<Vec<TileType>> {
         &self.grid
     }
 }
