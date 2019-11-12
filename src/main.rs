@@ -8,6 +8,7 @@ mod character;
 mod computer;
 mod world;
 
+use std::env;
 use character::Player;
 use character::Character;
 use computer::Enemy;
@@ -51,6 +52,7 @@ fn debug_level(level: Level) {
     }
 }
 
+
 fn main() {
     let mut level = 0;
     let mut dungeon = Dungeon::new(80, 24, 5);
@@ -69,14 +71,22 @@ fn main() {
     );
     character.place(start_location);
 
-    dungeon.levels.into_iter().map(debug_level);
+    // Dump the whole dungeon structure in terminal for debugging
+    match env::var("DEBUG") {
+        Ok(_) => {
+            for l in dungeon.levels {
+                debug_level(l);
+            }
+            return
+        },
+        Err(_) => ()
+    };
 
-    // let window = initscr();
+    let window = initscr();
 
-    // render_dungeon(&window, &world);
+    render_level(&window, &dungeon.levels[0]);
+    window.refresh();
+    window.getch();
 
-    // window.refresh();
-
-    // window.getch();
-    // endwin();
+    endwin();
 }
