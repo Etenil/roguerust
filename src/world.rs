@@ -1,25 +1,20 @@
 use rand::Rng;
 use pancurses::{Window};
+use crate::entities::{Entity};
+use crate::tiling::{TileGrid, Tileable, TileType};
 
 pub type Point = (usize, usize);
 
-#[derive(Clone)]
-enum TileType {
-    Empty,
-    Wall,
-    Floor,
-    StairsUp,
-    StairsDown,
-    Character,
+pub enum Direction {
+    North,
+    South,
+    East,
+    West
 }
 
 enum CorridorType {
     Horizontal,
     Vertical
-}
-
-trait Tileable {
-    fn tile(&self, grid: &mut TileGrid) -> Result<(), String>;
 }
 
 const LEFT: (i8, i8) = (-1i8, 0);
@@ -59,7 +54,7 @@ impl Room {
             start,
             width,
             height,
-            center: (start.0 + width / 2, start.1 + height / 2),
+            center: (start.0 + (width as f32 / 2.0) as usize, start.1 + (height as f32 / 2.0) as usize),
             edges: [
                 RoomEdge::new(start, (start.0 + width, start.1), UP),
                 RoomEdge::new(start, (start.0, start.1 + height), LEFT),
@@ -145,49 +140,14 @@ impl Tileable for Corridor {
     }
 }
 
-pub struct TileGrid {
-    grid: Vec<Vec<TileType>>
-}
-
-impl<'a> TileGrid {
-    pub fn new(xsize: usize, ysize: usize) -> TileGrid {
-        let mut grid = TileGrid {
-            grid: Vec::with_capacity(ysize)
-        };
-
-        for _ in 0..ysize {
-            let mut subvec = Vec::with_capacity(xsize);
-            for _ in 0..xsize {
-                subvec.push(TileType::Empty);
-            }
-            grid.grid.push(subvec);
-        }
-
-        return grid;
-    }
-
-    fn set_tile(&mut self, x: usize, y: usize, tile: TileType) {
-        self.grid[y][x] = tile;
-    }
-
-    /// Sets a tile if nothing lies underneath it.
-    fn set_empty_tile(&mut self, x: usize, y: usize, tile: TileType) {
-        self.set_tile(x, y, match self.grid[y][x] {
-            TileType::Empty => tile,
-            _ => self.grid[y][x].clone()
-        })
-    }
-
-    pub fn raw_data(&'a self) -> &'a Vec<Vec<TileType>> {
-        &self.grid
-    }
-}
-
 pub struct Level {
     xsize: usize,
     ysize: usize,
     rooms: Vec<Room>,
-    corridors: Vec<Corridor>
+    corridors: Vec<Corridor>,
+    entities: Vec<Box<dyn Entity>>,
+    entrance: Point,
+    exit: Point
 }
 
 pub struct Dungeon {
@@ -197,7 +157,7 @@ pub struct Dungeon {
     pub levels: Vec<Level>
 }
 
-pub trait Generable {
+pub trait Generatable {
     fn generate(&mut self);
 }
 
@@ -256,16 +216,23 @@ impl Dungeon {
             TileType::Empty => " ",
             TileType::StairsDown => ">",
             TileType::StairsUp => "<",
-            TileType::Character => "@",
+            TileType::Player => "@",
+            _ => "?"
         }
     }
 }
 
-impl Generable for Dungeon {
+impl Generatable for Dungeon {
     fn generate(&mut self) {
-        for _ in 0..self.depth {
-            let mut level = Level::new(self.xsize, self.ysize, None);
+        let mut level = Level::new(self.xsize, self.ysize, None);
+        level.generate();
+        let mut next_entrance = level.get_exit();
+        self.levels.push(level);
+
+        for _ in 1..self.depth {
+            level = Level::new(self.xsize, self.ysize, Some(next_entrance));
             level.generate();
+            next_entrance = level.get_exit();
             self.levels.push(level);
         }
     }
@@ -279,8 +246,14 @@ impl Level {
         Level {
             xsize,
             ysize,
-            rooms: Vec::new(),
-            corridors: Vec::new()
+            rooms: vec![],
+            corridors: vec![],
+            entities: vec![],
+            entrance: match start {
+                Some(st) => st,
+                None => (0, 0)
+            },
+            exit: (0, 0)
         }
     }
 
@@ -294,6 +267,9 @@ impl Level {
         for corridor in &self.corridors {
             corridor.tile(&mut grid)?;
         }
+
+        grid.set_tile(self.entrance.0, self.entrance.1, TileType::StairsUp);
+        grid.set_tile(self.exit.0, self.exit.1, TileType::StairsDown);
 
         Ok(grid)
     }
@@ -314,6 +290,14 @@ impl Level {
             }
             window.mv(linenum as i32, 0);
         }
+    }
+
+    pub fn get_entrance(&self) -> Point {
+        self.entrance
+    }
+
+    pub fn get_exit(&self) -> Point {
+        self.exit
     }
 
     fn overlaps(&self, start: Point, width: usize, height: usize, padding: usize) -> bool {
@@ -344,8 +328,8 @@ impl Level {
     fn random_room(&self) -> Result<Room, String> {
         // TODO: Detect when not enough space is left to allocate a room.
         let mut rng = rand::thread_rng();
-        let room_width = rng.gen_range(3, 12);
-        let room_height = rng.gen_range(3, 12);
+        let room_width = rng.gen_range(4, 12);
+        let room_height = rng.gen_range(4, 12);
 
         // TODO: Find a way to write a lambda to generate the start point.
         let mut start: Point = (
@@ -362,15 +346,32 @@ impl Level {
 
         Ok(Room::new(start, room_width, room_height))
     }
+
+    fn centered_room(&self, center: Point) -> Room {
+        let mut rng = rand::thread_rng();
+        let room_width = rng.gen_range(3, 12);
+        let room_height = rng.gen_range(3, 12);
+
+        let start = (
+            (center.0 as f32 - (room_width as f32 / 2f32)).round() as usize,
+            (center.1 as f32 - (room_height as f32 / 2f32)).round() as usize
+        );
+
+        Room::new(start, room_width, room_height)
+    }
 }
 
-impl Generable for Level {
+impl Generatable for Level {
     fn generate(&mut self) {
         let mut rng = rand::thread_rng();
         let room_number = rng.gen_range(3, 5);
 
+        if self.entrance != (0, 0) {
+            self.rooms.push(self.centered_room(self.entrance));
+        }
+
         // Generate rooms
-        for _ in 0..room_number {
+        for _ in self.rooms.len()..room_number {
             self.rooms.push(self.random_room().unwrap());
         }
 
@@ -409,6 +410,11 @@ impl Generable for Level {
                 CorridorType::Vertical
             ));
         }
+
+        if self.entrance == (0, 0) {
+            self.entrance = self.rooms[0].center;
+        }
+        self.exit = self.rooms.last().unwrap().center;
     }
 }
 

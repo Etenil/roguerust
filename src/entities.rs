@@ -1,7 +1,14 @@
 use std::cmp;
 
-use crate::world::Point;
+use crate::world::{Point, Direction};
+use crate::tiling::TileType;
 
+pub trait Entity {
+    fn info(&self) -> String;
+    fn place(&mut self, location: Point);
+}
+
+#[derive(Clone)]
 pub struct Character {
     pub name: String,
     pub class: String,
@@ -11,8 +18,21 @@ pub struct Character {
     dodge: i32,
     luck: i32,
     xp: i32,
-    gold: i32,
-    location: Point
+    location: Point,
+    tile_type: TileType
+}
+
+pub trait Enemy {
+    fn new(
+        class: String,
+        health: i32,
+        attack: i32,
+        dodge: i32,
+        luck: i32,
+        location: Point
+    ) -> Self;
+
+    fn set_tile_type(&mut self, tile_type: TileType);
 }
 
 pub trait Player {
@@ -23,34 +43,55 @@ pub trait Player {
         attack: i32,
         dodge: i32,
         luck: i32,
-    ) -> Character;
-
-    fn place(&mut self, location: Point);
-
-    fn select(&self, player_name: String, player_luck: i32) -> Self;
-
+        location: Point
+    ) -> Self;
     fn damage(&mut self, damage_amount: i32);
-
     fn heal(&mut self, heal_amount: i32);
-
     fn attack(&self) -> i32;
-
     fn dodge(&self) -> i32;
-
-    fn info(&self) -> String;
-
     fn stats(&self) -> String;
-
     fn walk(&mut self, dir: Direction);
-
-    fn get_gold(&self) -> i32;
 }
 
-pub enum Direction {
-    North,
-    South,
-    East,
-    West
+impl Entity for Character {
+    fn place(&mut self, location: Point) {
+        self.location = location;
+    }
+
+    fn info(&self) -> String {
+        format!(
+            "{} \thp: {} attack: {} dodge: {} luck: {}",
+            self.class, self.health, self.attack, self.dodge, self.luck
+        )
+    }
+}
+
+impl Enemy for Character {
+    fn new(
+        class: String,
+        health: i32,
+        attack: i32,
+        dodge: i32,
+        luck: i32,
+        location: Point
+    ) -> Character {
+        Character {
+            name: class.clone(),
+            class: class.clone(),
+            max_health: health,
+            health,
+            attack,
+            dodge,
+            luck,
+            xp: 0,
+            location: location,
+            tile_type: TileType::Character
+        }
+    }
+
+    fn set_tile_type(&mut self, tile_type: TileType) {
+        self.tile_type = tile_type
+    }
 }
 
 impl Player for Character {
@@ -61,6 +102,7 @@ impl Player for Character {
         attack: i32,
         dodge: i32,
         luck: i32,
+        location: Point
     ) -> Character {
         Character {
             name: name,
@@ -71,24 +113,9 @@ impl Player for Character {
             dodge: dodge,
             luck: luck,
             xp: 0,
-            gold: 0,
-            location: (0, 0),
+            location: location,
+            tile_type: TileType::Player
         }
-    }
-
-    fn place(&mut self, location: Point) {
-        self.location = location;
-    }
-
-    fn select(&self, player_name: String, player_luck: i32) -> Self {
-        Self::new(
-            player_name,
-            self.class.to_string(),
-            self.health,
-            self.attack,
-            self.dodge,
-            self.luck + player_luck,
-        )
     }
 
     fn walk(&mut self, dir: Direction) {
@@ -120,22 +147,11 @@ impl Player for Character {
         self.xp + self.dodge + self.luck / 2
     }
 
-    fn info(&self) -> String {
-        format!(
-            "{} \thp: {} attack: {} dodge: {} luck: {}",
-            self.class, self.health, self.attack, self.dodge, self.luck
-        )
-    }
-
     fn stats(&self) -> String {
         format!(
-            "{} - hp: {}/{} attack: {} dodge: {} luck: {} experience: {} gold: {}",
-            self.class, self.health, self.max_health, self.attack, self.dodge, self.luck, self.xp, self.gold
+            "{} - hp: {}/{} attack: {} dodge: {} luck: {} experience: {}",
+            self.class, self.health, self.max_health, self.attack, self.dodge, self.luck, self.xp
         )
-    }
-
-    fn get_gold(&self) -> i32 {
-        self.gold
     }
 }
 
@@ -144,8 +160,8 @@ mod tests {
     use super::*;
 
     fn test_attack() {
-        let player = Character::new("".to_string(), "Rogue".to_string(), 1, 4, 1, 4);
+        let bob: Character = Enemy::new("Rogue".to_string(), 1, 4, 1, 4, (0, 0));
 
-        assert_eq!(player.attack(), 6);
+        assert_eq!(bob.attack(), 6);
     }
 }

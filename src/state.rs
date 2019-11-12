@@ -1,10 +1,8 @@
 use pancurses::Window;
 use std::env;
 
-use crate::character::Character;
-use crate::character::Player;
-use crate::computer::Enemy;
-use crate::world::{Dungeon, Generable, Level};
+use crate::entities::{Character, Entity};
+use crate::world::{Dungeon, Generatable, Level};
 
 pub struct State {
     pub character: Character,

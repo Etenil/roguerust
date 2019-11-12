@@ -4,33 +4,36 @@ extern crate pancurses;
 #[macro_use]
 extern crate text_io;
 
-mod character;
-mod computer;
 mod state;
+mod entities;
 mod world;
+mod tiling;
 
-use character::Player;
-use character::Character;
+use entities::Player;
 use pancurses::{
     initscr,
     endwin,
-    Input
+    Input,
+    noecho
 };
 use state::State;
 use world::Dungeon;
 
 
 fn main() {
+    let window = initscr();
+
     let mut state = State::new(
-        Character::new(
+        Player::new(
             "Kshar".to_string(),
-            "Warror".to_string(),
+            "Warrior".to_string(),
             30,
             10,
             10,
             20,
+            (0, 0)
         ),
-        Dungeon::new(80, 24, 5),
+        Dungeon::new(window.get_max_x() as usize, window.get_max_y() as usize, 5),
     );
 
     state.init();
@@ -38,9 +41,10 @@ fn main() {
     // Dump the whole dungeon structure in terminal for debugging
     state.debug();
 
-    let window = initscr();
-
     state.render_level(&window);
+
+    window.keypad(true);
+    noecho();
 
     loop {
         // update actors
@@ -61,6 +65,4 @@ fn main() {
         }
     }
     endwin();
-
-    println!("You quit with {} gold pieces", state.character.get_gold())
 }
