@@ -11,10 +11,7 @@ mod world;
 use character::Player;
 use computer::Enemy;
 use pancurses::{Window, initscr, endwin};
-use rand::Rng;
-use std::io;
-use std::convert::TryFrom;
-use world::{World, GameWorld, TileType};
+use world::{Dungeon, Level, Generable, TileType};
 
 fn tile_to_str(tile: &TileType) -> &str {
     match tile {
@@ -31,8 +28,8 @@ fn draw_block(window: &Window, block: &TileType) {
     window.printw(tile_to_str(block));
 }
 
-fn render_world(window: &Window, world: &World) {
-    let grid = world.to_tilegrid().unwrap();
+fn render_level(window: &Window, level: &Level) {
+    let grid = level.to_tilegrid().unwrap();
 
     for (linenum, line) in grid.raw_data().iter().enumerate() {
         for block in line.iter() {
@@ -42,8 +39,8 @@ fn render_world(window: &Window, world: &World) {
     }
 }
 
-fn debug_world(world: &World) {
-    let grid = world.to_tilegrid().unwrap();
+fn debug_level(level: &Level) {
+    let grid = level.to_tilegrid().unwrap();
 
     for line in grid.raw_data().iter() {
         for block in line.iter() {
@@ -54,14 +51,17 @@ fn debug_world(world: &World) {
 }
 
 fn main() {
-    let mut world = World::new(80, 24);
-    world.generate();
+    let mut level = 0;
+    let mut dungeon = Dungeon::new(80, 24, 5);
+    dungeon.generate();
 
-    debug_world(&world);
+    for l in dungeon.levels {
+        debug_level(&l);
+    }
 
     // let window = initscr();
 
-    // render_world(&window, &world);
+    // render_dungeon(&window, &world);
 
     // window.refresh();
 

@@ -181,19 +181,22 @@ impl<'a> TileGrid {
     }
 }
 
-pub struct World {
+pub struct Level {
     xsize: usize,
     ysize: usize,
     rooms: Vec<Room>,
     corridors: Vec<Corridor>
 }
 
-pub trait GameWorld {
-    fn new(xsize: usize, ysize: usize) -> Self;
+pub struct Dungeon {
+    xsize: usize,
+    ysize: usize,
+    depth: usize,
+    pub levels: Vec<Level>
+}
 
+pub trait Generable {
     fn generate(&mut self);
-
-    fn to_tilegrid(&self) -> Result<TileGrid, String>;
 }
 
 fn hor_dist(point1: Point, point2: Point) -> f32 {
@@ -213,7 +216,54 @@ fn distance(point1: Point, point2: Point) -> f32 {
     ).sqrt()
 }
 
-impl World {
+impl Dungeon {
+    pub fn new(xsize: usize, ysize: usize, depth: usize) -> Dungeon {
+        Dungeon {
+            xsize,
+            ysize,
+            depth,
+            levels: vec![]
+        }
+    }
+}
+
+impl Generable for Dungeon {
+    fn generate(&mut self) {
+        for _ in 0..self.depth {
+            let mut level = Level::new(self.xsize, self.ysize, None);
+            level.generate();
+            self.levels.push(level);
+        }
+    }
+}
+
+impl Level {
+    /// Creates a new level of horizontal size `xsize` and vertical size `ysize`.
+    /// If start is Some<Point> then a room will be created at that point to link
+    /// with an upper room.
+    pub fn new(xsize: usize, ysize: usize, start: Option<Point>) -> Level {
+        Level {
+            xsize,
+            ysize,
+            rooms: Vec::new(),
+            corridors: Vec::new()
+        }
+    }
+
+    pub fn to_tilegrid(&self) -> Result<TileGrid, String> {
+        let mut grid = TileGrid::new(self.xsize, self.ysize);
+
+        for room in &self.rooms {
+            room.tile(&mut grid)?;
+        }
+
+        for corridor in &self.corridors {
+            corridor.tile(&mut grid)?;
+        }
+
+        Ok(grid)
+    }
+
     fn overlaps(&self, start: Point, width: usize, height: usize, padding: usize) -> bool {
         for room in &self.rooms {
             if room.start.0 < start.0 + width + padding &&
@@ -262,16 +312,7 @@ impl World {
     }
 }
 
-impl GameWorld for World {
-    fn new(xsize: usize, ysize: usize) -> World {
-        World {
-            xsize,
-            ysize,
-            rooms: Vec::new(),
-            corridors: Vec::new()
-        }
-    }
-
+impl Generable for Level {
     fn generate(&mut self) {
         let mut rng = rand::thread_rng();
         let room_number = rng.gen_range(3, 5);
@@ -317,20 +358,6 @@ impl GameWorld for World {
             ));
         }
     }
-
-    fn to_tilegrid(&self) -> Result<TileGrid, String> {
-        let mut grid = TileGrid::new(self.xsize, self.ysize);
-
-        for room in &self.rooms {
-            room.tile(&mut grid)?;
-        }
-
-        for corridor in &self.corridors {
-            corridor.tile(&mut grid)?;
-        }
-
-        Ok(grid)
-    }
 }
 
 #[cfg(test)]
@@ -339,7 +366,7 @@ mod tests {
 
     #[test]
     fn test_generates_world() {
-        let mut world = World::new(128, 128);
-        world.generate();
+        let mut level = Level::new(128, 128, None);
+        level.generate();
     }
 }
