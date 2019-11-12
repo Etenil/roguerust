@@ -98,12 +98,12 @@ fn main() {
         // get input and execute it
         match window.getch() {
 
-            Some(Input::Character('h')) => { window.addstr("DEL: quit\n"); },
+            Some(Input::Character('h')) => { window.addstr("q: quit\n"); },
             // Some(Input::KeyDown) => { window.addstr("down\n"); },
             // Some(Input::KeyUp) => { window.addch('b'); },
             // Some(Input::KeyLeft) => { window.addch('c'); },
             // Some(Input::KeyRight) => { window.addch('d'); },
-            Some(Input::KeyDC) => break,
+            Some(Input::Character('q')) => break,
             Some(_) => (),
             None => (),
         }
