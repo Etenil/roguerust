@@ -1,6 +1,7 @@
 use std::cmp;
 
-use crate::world::{Point, Direction};
+use pancurses::{Window};
+use crate::world::{Point};
 use crate::tiling::TileType;
 
 pub trait Entity {
@@ -13,13 +14,18 @@ pub struct Character {
     pub name: String,
     pub class: String,
     pub health: i32,
+    pub level: i32,
+    pub location: Point,
     max_health: i32,
     attack: i32,
     dodge: i32,
     luck: i32,
     xp: i32,
-    location: Point,
     tile_type: TileType
+}
+
+pub trait Render {
+    fn render(&self, window: &Window);
 }
 
 pub trait Enemy {
@@ -43,6 +49,7 @@ pub trait Player {
         attack: i32,
         dodge: i32,
         luck: i32,
+        level: i32,
         location: Point
     ) -> Self;
     fn damage(&mut self, damage_amount: i32);
@@ -50,7 +57,23 @@ pub trait Player {
     fn attack(&self) -> i32;
     fn dodge(&self) -> i32;
     fn stats(&self) -> String;
-    fn walk(&mut self, dir: Direction);
+}
+
+impl Render for Character {
+    fn render(&self, window: &Window) {
+    //     window.mv(window.get_max_y() - 2, 0);
+    //     window.clrtoeol();
+        
+    //     window.refresh();
+
+    //     window.addstr(self.character.info() + "\n");
+
+    //     window.mv(self.character.location.1 as i32,self.character.location.0 as i32);
+    //     window.refresh();
+    //     draw_block(&window, self.character.tile_type);
+    //     window.refresh();
+
+    }
 }
 
 impl Entity for Character {
@@ -83,6 +106,7 @@ impl Enemy for Character {
             attack,
             dodge,
             luck,
+            level: 0,
             xp: 0,
             location: location,
             tile_type: TileType::Character
@@ -102,6 +126,7 @@ impl Player for Character {
         attack: i32,
         dodge: i32,
         luck: i32,
+        level: i32,
         location: Point
     ) -> Character {
         Character {
@@ -113,17 +138,9 @@ impl Player for Character {
             dodge: dodge,
             luck: luck,
             xp: 0,
+            level: 0,
             location: location,
             tile_type: TileType::Player
-        }
-    }
-
-    fn walk(&mut self, dir: Direction) {
-        match dir {
-            Direction::North => { (); },
-            Direction::South => { (); },
-            Direction::East => { (); },
-            Direction::West => { (); }
         }
     }
 
