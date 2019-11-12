@@ -1,6 +1,6 @@
 use rand::Rng;
 use pancurses::{Window};
-use crate::entities::{Entity};
+use crate::entities::{Character, Entity, Enemy};
 use crate::tiling::{TileGrid, Tileable, TileType, draw_block};
 
 pub type Point = (usize, usize);
@@ -143,9 +143,10 @@ impl Tileable for Corridor {
 pub struct Level {
     xsize: usize,
     ysize: usize,
+    depth: usize,
     rooms: Vec<Room>,
     corridors: Vec<Corridor>,
-    entities: Vec<Box<dyn Entity>>,
+    pub entities: Vec<Box<dyn Entity>>,
     entrance: Point,
     exit: Point
 }
@@ -191,13 +192,13 @@ impl Dungeon {
 
 impl Generatable for Dungeon {
     fn generate(&mut self) {
-        let mut level = Level::new(self.xsize, self.ysize, None);
+        let mut level = Level::new(self.xsize, self.ysize, 1, None);
         level.generate();
         let mut next_entrance = level.get_exit();
         self.levels.push(level);
 
-        for _ in 1..self.depth {
-            level = Level::new(self.xsize, self.ysize, Some(next_entrance));
+        for d in 1..self.depth {
+            level = Level::new(self.xsize, self.ysize, d + 1, Some(next_entrance));
             level.generate();
             next_entrance = level.get_exit();
             self.levels.push(level);
@@ -209,7 +210,7 @@ impl Level {
     /// Creates a new level of horizontal size `xsize` and vertical size `ysize`.
     /// If start is Some<Point> then a room will be created at that point to link
     /// with an upper room.
-    pub fn new(xsize: usize, ysize: usize, start: Option<Point>) -> Level {
+    pub fn new(xsize: usize, ysize: usize, depth: usize, start: Option<Point>) -> Level {
         Level {
             xsize,
             ysize,
@@ -220,7 +221,8 @@ impl Level {
                 Some(st) => st,
                 None => (0, 0)
             },
-            exit: (0, 0)
+            exit: (0, 0),
+            depth
         }
     }
 
@@ -378,10 +380,29 @@ impl Generatable for Level {
             ));
         }
 
+        // Create entrance and exit
         if self.entrance == (0, 0) {
             self.entrance = self.rooms[0].center;
         }
         self.exit = self.rooms.last().unwrap().center;
+
+        // Populate the level
+        let num_enemies: usize = (self.rooms.len() as f32 * self.depth as f32 * 0.5) as usize;
+        for _ in 0..num_enemies {
+            // Pick a room
+            let mut rng = rand::thread_rng();
+            let room = &self.rooms[rng.gen_range(0, self.rooms.len() - 1)];
+
+            // Create the enemy
+            self.entities.push(Box::<Character>::new(Enemy::new(
+                "snake".to_string(),
+                2 * self.depth as i32,
+                (2.0 * self.depth as f32 * 0.6).round() as i32,
+                (20.0 * self.depth as f32 * 0.2).max(80.0).round() as i32,
+                0,
+                (room.start.0 + rng.gen_range(0, room.width), room.start.1 + rng.gen_range(0, room.height))
+            )));
+        }
     }
 }
 
@@ -391,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_generates_world() {
-        let mut level = Level::new(128, 128, None);
+        let mut level = Level::new(128, 128, 1, None);
         level.generate();
     }
 }
