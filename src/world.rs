@@ -1,9 +1,10 @@
 use rand::Rng;
+use pancurses::{Window};
 
 pub type Point = (usize, usize);
 
 #[derive(Clone)]
-pub enum TileType {
+enum TileType {
     Empty,
     Wall,
     Floor,
@@ -226,6 +227,38 @@ impl Dungeon {
             levels: vec![]
         }
     }
+
+    pub fn debug_levels(&self) {
+        for l in &self.levels {
+            Dungeon::debug_level(l);
+        }
+    }
+
+    fn draw_block(window: &Window, block: &TileType) {
+        window.printw(Dungeon::tile_to_str(block));
+    }
+
+    fn debug_level(level: &Level) {
+        let grid = level.to_tilegrid().unwrap();
+
+        for line in grid.raw_data().iter() {
+            for block in line.iter() {
+                print!("{}", Dungeon::tile_to_str(block));
+            }
+            print!("\n");
+        }
+    }
+
+    fn tile_to_str(tile: &TileType) -> &str {
+        match tile {
+            TileType::Floor => ".",
+            TileType::Wall => "#",
+            TileType::Empty => " ",
+            TileType::StairsDown => ">",
+            TileType::StairsUp => "<",
+            TileType::Character => "@",
+        }
+    }
 }
 
 impl Generable for Dungeon {
@@ -251,7 +284,7 @@ impl Level {
         }
     }
 
-    pub fn to_tilegrid(&self) -> Result<TileGrid, String> {
+    fn to_tilegrid(&self) -> Result<TileGrid, String> {
         let mut grid = TileGrid::new(self.xsize, self.ysize);
 
         for room in &self.rooms {
@@ -270,6 +303,17 @@ impl Level {
             return self.rooms[0].center;
         }
         return (0,0)
+    }
+
+    pub fn render(&self, window: &Window) {
+        let grid = self.to_tilegrid().unwrap();
+
+        for (linenum, line) in grid.raw_data().iter().enumerate() {
+            for block in line.iter() {
+                Dungeon::draw_block(&window, &block);
+            }
+            window.mv(linenum as i32, 0);
+        }
     }
 
     fn overlaps(&self, start: Point, width: usize, height: usize, padding: usize) -> bool {

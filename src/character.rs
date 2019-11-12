@@ -11,6 +11,7 @@ pub struct Character {
     dodge: i32,
     luck: i32,
     xp: i32,
+    gold: i32,
     location: Point
 }
 
@@ -22,7 +23,6 @@ pub trait Player {
         attack: i32,
         dodge: i32,
         luck: i32,
-        location: Point
     ) -> Character;
 
     fn place(&mut self, location: Point);
@@ -42,6 +42,8 @@ pub trait Player {
     fn stats(&self) -> String;
 
     fn walk(&mut self, dir: Direction);
+
+    fn get_gold(&self) -> i32;
 }
 
 pub enum Direction {
@@ -59,7 +61,6 @@ impl Player for Character {
         attack: i32,
         dodge: i32,
         luck: i32,
-        location: Point
     ) -> Character {
         Character {
             name: name,
@@ -70,7 +71,8 @@ impl Player for Character {
             dodge: dodge,
             luck: luck,
             xp: 0,
-            location: location
+            gold: 0,
+            location: (0, 0),
         }
     }
 
@@ -86,7 +88,6 @@ impl Player for Character {
             self.attack,
             self.dodge,
             self.luck + player_luck,
-            (0,0)
         )
     }
 
@@ -128,9 +129,13 @@ impl Player for Character {
 
     fn stats(&self) -> String {
         format!(
-            "{} - hp: {} attack: {} dodge: {} luck: {} experience: {}",
-            self.class, self.health, self.attack, self.dodge, self.luck, self.xp
+            "{} - hp: {}/{} attack: {} dodge: {} luck: {} experience: {} gold: {}",
+            self.class, self.health, self.max_health, self.attack, self.dodge, self.luck, self.xp, self.gold
         )
+    }
+
+    fn get_gold(&self) -> i32 {
+        self.gold
     }
 }
 
@@ -139,7 +144,7 @@ mod tests {
     use super::*;
 
     fn test_attack() {
-        let player = Character::new("".to_string(), "Rogue".to_string(), 1, 4, 1, 4, (0,0));
+        let player = Character::new("".to_string(), "Rogue".to_string(), 1, 4, 1, 4);
 
         assert_eq!(player.attack(), 6);
     }
