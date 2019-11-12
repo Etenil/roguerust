@@ -193,13 +193,9 @@ pub trait GameWorld {
 
     fn generate(&mut self);
 
-<<<<<<< Updated upstream
     fn to_tilegrid(&self) -> Result<TileGrid, String>;
-=======
-    fn to_tilegrid(&self) -> TileGrid;
 
     fn get_start_location(&self) -> Point;
->>>>>>> Stashed changes
 }
 
 fn hor_dist(point1: Point, point2: Point) -> f32 {

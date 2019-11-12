@@ -2,7 +2,6 @@ use std::cmp;
 
 use crate::world::Point;
 
-#[derive(Default)]
 pub struct Character {
     pub name: String,
     pub class: String,
