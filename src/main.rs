@@ -18,7 +18,7 @@ use world::{Dungeon, Level, Generable, TileType};
 fn tile_to_str(tile: &TileType) -> &str {
     match tile {
         TileType::Floor => ".",
-        TileType::Wall => "█",
+        TileType::Wall => "#",
         TileType::Empty => " ",
         TileType::StairsDown => ">",
         TileType::StairsUp => "<",
