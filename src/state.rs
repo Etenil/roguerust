@@ -5,18 +5,18 @@ use crate::entities::{Character, Entity};
 use crate::world::{Dungeon, Generatable, Level};
 
 pub struct State {
-    pub character: Character,
+    pub player: Character,
     pub dungeon: Dungeon,
     pub level: usize,
 }
 
 impl State {
     pub fn new(
-        character: Character,
+        player: Character,
         dungeon: Dungeon,
-    ) -> State {
+    ) -> Self {
         State {
-            character: character,
+            player: player,
             dungeon: dungeon,
             level: 0,
         }
@@ -24,7 +24,7 @@ impl State {
 
     pub fn init(&mut self) {
         self.dungeon.generate();
-        self.character.place(self.current_level().get_start_point());
+        self.player.place(self.current_level().get_start_point());
     }
 
     pub fn debug(&self) {
