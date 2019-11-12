@@ -186,7 +186,9 @@ pub struct Level {
     xsize: usize,
     ysize: usize,
     rooms: Vec<Room>,
-    corridors: Vec<Corridor>
+    corridors: Vec<Corridor>,
+    entrance: Point,
+    exit: Point
 }
 
 pub struct Dungeon {
@@ -230,9 +232,15 @@ impl Dungeon {
 
 impl Generable for Dungeon {
     fn generate(&mut self) {
-        for _ in 0..self.depth {
-            let mut level = Level::new(self.xsize, self.ysize, None);
+        let mut level = Level::new(self.xsize, self.ysize, None);
+        level.generate();
+        let mut next_entrance = level.get_exit();
+        self.levels.push(level);
+
+        for _ in 1..self.depth {
+            level = Level::new(self.xsize, self.ysize, Some(next_entrance));
             level.generate();
+            next_entrance = level.get_exit();
             self.levels.push(level);
         }
     }
@@ -247,7 +255,12 @@ impl Level {
             xsize,
             ysize,
             rooms: Vec::new(),
-            corridors: Vec::new()
+            corridors: Vec::new(),
+            entrance: match start {
+                Some(st) => st,
+                None => (0, 0)
+            },
+            exit: (0, 0)
         }
     }
 
@@ -262,6 +275,9 @@ impl Level {
             corridor.tile(&mut grid)?;
         }
 
+        grid.set_tile(self.entrance.0, self.entrance.1, TileType::StairsUp);
+        grid.set_tile(self.exit.0, self.exit.1, TileType::StairsDown);
+
         Ok(grid)
     }
 
@@ -270,6 +286,14 @@ impl Level {
             return self.rooms[0].center;
         }
         return (0,0)
+    }
+
+    pub fn get_entrance(&self) -> Point {
+        self.entrance
+    }
+
+    pub fn get_exit(&self) -> Point {
+        self.exit
     }
 
     fn overlaps(&self, start: Point, width: usize, height: usize, padding: usize) -> bool {
@@ -300,8 +324,8 @@ impl Level {
     fn random_room(&self) -> Result<Room, String> {
         // TODO: Detect when not enough space is left to allocate a room.
         let mut rng = rand::thread_rng();
-        let room_width = rng.gen_range(3, 12);
-        let room_height = rng.gen_range(3, 12);
+        let room_width = rng.gen_range(4, 12);
+        let room_height = rng.gen_range(4, 12);
 
         // TODO: Find a way to write a lambda to generate the start point.
         let mut start: Point = (
@@ -318,6 +342,19 @@ impl Level {
 
         Ok(Room::new(start, room_width, room_height))
     }
+
+    fn centered_room(&self, center: Point) -> Room {
+        let mut rng = rand::thread_rng();
+        let room_width = rng.gen_range(3, 12);
+        let room_height = rng.gen_range(3, 12);
+
+        let start = (
+            (center.0 as f32 - (room_width as f32 / 2f32)).round() as usize,
+            (center.1 as f32 - (room_height as f32 / 2f32)).round() as usize
+        );
+
+        Room::new(start, room_width, room_height)
+    }
 }
 
 impl Generable for Level {
@@ -325,8 +362,12 @@ impl Generable for Level {
         let mut rng = rand::thread_rng();
         let room_number = rng.gen_range(3, 5);
 
+        if self.entrance != (0, 0) {
+            self.rooms.push(self.centered_room(self.entrance));
+        }
+
         // Generate rooms
-        for _ in 0..room_number {
+        for _ in self.rooms.len()..room_number {
             self.rooms.push(self.random_room().unwrap());
         }
 
@@ -365,6 +406,11 @@ impl Generable for Level {
                 CorridorType::Vertical
             ));
         }
+
+        if self.entrance == (0, 0) {
+            self.entrance = self.rooms[0].center;
+        }
+        self.exit = self.rooms.last().unwrap().center;
     }
 }
 
