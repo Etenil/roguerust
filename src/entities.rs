@@ -45,6 +45,7 @@ pub trait Player {
         attack: i32,
         dodge: i32,
         luck: i32,
+        level: i32,
         location: Point
     ) -> Self;
     fn damage(&mut self, damage_amount: i32);
@@ -52,7 +53,6 @@ pub trait Player {
     fn attack(&self) -> i32;
     fn dodge(&self) -> i32;
     fn stats(&self) -> String;
-    fn walk(&mut self, dir: Direction);
 }
 
 impl Entity for Character {
@@ -75,9 +75,9 @@ impl Enemy for Character {
         attack: i32,
         dodge: i32,
         luck: i32,
+        level: i32,
         location: Point
     ) -> Character {
-        Character {
             name: class.clone(),
             class: class.clone(),
             max_health: health,
@@ -88,7 +88,6 @@ impl Enemy for Character {
             xp: 0,
             location: location,
             tile_type: TileType::Character
-        }
     }
 
     fn set_tile_type(&mut self, tile_type: TileType) {
@@ -105,8 +104,7 @@ impl Player for Character {
         dodge: i32,
         luck: i32,
         level: i32,
-        location: Point,
-        tile_type: TileType
+        location: Point
     ) -> Character {
         Character {
             name: name,
@@ -120,37 +118,6 @@ impl Player for Character {
             level: 0,
             location: location,
             tile_type: TileType::Player
-        }
-    }
-
-    fn place(&mut self, location: Point) {
-        self.location = location;
-    }
-
-    fn select(&self, player_name: String, player_luck: i32) -> Self {
-        Self::new(
-            player_name,
-            self.class.to_string(),
-            self.health,
-            self.attack,
-            self.dodge,
-            self.luck + player_luck,
-            0,
-            (0,0)
-        )
-    }
-
-            location: location,
-            tile_type: TileType::Player
-        }
-    }
-
-    fn walk(&mut self, dir: Direction) {
-        match dir {
-            Direction::North => { (); },
-            Direction::South => { (); },
-            Direction::East => { (); },
-            Direction::West => { (); }
         }
     }
 
@@ -187,7 +154,7 @@ mod tests {
     use super::*;
 
     fn test_attack() {
-        let player: Character = Player::new("".to_string(), "Rogue".to_string(), 1, 4, 1, 4, (0,0));
+        let player: Character = Player::new("".to_string(), "Rogue".to_string(), 1, 4, 1, 4, 0, (0,0));
 
         assert_eq!(player.attack(), 6);
     }
