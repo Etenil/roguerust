@@ -1,5 +1,7 @@
 use std::cmp;
 
+use crate::world::Point;
+
 pub struct Character {
     pub name: String,
     pub class: String,
@@ -8,7 +10,8 @@ pub struct Character {
     attack: i32,
     dodge: i32,
     luck: i32,
-    xp: i32
+    xp: i32,
+    location: Point
 }
 
 pub trait Player {
@@ -18,8 +21,11 @@ pub trait Player {
         health: i32,
         attack: i32,
         dodge: i32,
-        luck: i32
+        luck: i32,
+        location: Point
     ) -> Character;
+
+    fn place(&mut self, location: Point);
 
     fn select(&self, player_name: String, player_luck: i32) -> Self;
 
@@ -34,8 +40,16 @@ pub trait Player {
     fn info(&self) -> String;
 
     fn stats(&self) -> String;
+
+    fn walk(&mut self, dir: Direction);
 }
 
+pub enum Direction {
+    North,
+    South,
+    East,
+    West
+}
 
 impl Player for Character {
     fn new(
@@ -44,7 +58,8 @@ impl Player for Character {
         health: i32,
         attack: i32,
         dodge: i32,
-        luck: i32
+        luck: i32,
+        location: Point
     ) -> Character {
         Character {
             name: name,
@@ -55,7 +70,12 @@ impl Player for Character {
             dodge: dodge,
             luck: luck,
             xp: 0,
+            location: location
         }
+    }
+
+    fn place(&mut self, location: Point) {
+        self.location = location;
     }
 
     fn select(&self, player_name: String, player_luck: i32) -> Self {
@@ -65,8 +85,18 @@ impl Player for Character {
             self.health,
             self.attack,
             self.dodge,
-            self.luck + player_luck
+            self.luck + player_luck,
+            (0,0)
         )
+    }
+
+    fn walk(&mut self, dir: Direction) {
+        match dir {
+            Direction::North => { (); },
+            Direction::South => { (); },
+            Direction::East => { (); },
+            Direction::West => { (); }
+        }
     }
 
     fn damage(&mut self, damage_amount: i32) {
@@ -109,7 +139,7 @@ mod tests {
     use super::*;
 
     fn test_attack() {
-        let player = Character::new("".to_string(), "Rogue".to_string(), 1, 4, 1, 4);
+        let player = Character::new("".to_string(), "Rogue".to_string(), 1, 4, 1, 4, (0,0));
 
         assert_eq!(player.attack(), 6);
     }

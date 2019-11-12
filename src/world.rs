@@ -1,6 +1,6 @@
 use rand::Rng;
 
-type Point = (usize, usize);
+pub type Point = (usize, usize);
 
 #[derive(Clone)]
 pub enum TileType {
@@ -262,6 +262,13 @@ impl Level {
         }
 
         Ok(grid)
+    }
+
+    pub fn get_start_point(&self) -> Point {
+        if self.rooms.len() > 0 {
+            return self.rooms[0].center;
+        }
+        return (0,0)
     }
 
     fn overlaps(&self, start: Point, width: usize, height: usize, padding: usize) -> bool {

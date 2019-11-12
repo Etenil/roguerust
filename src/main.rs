@@ -9,6 +9,7 @@ mod computer;
 mod world;
 
 use character::Player;
+use character::Character;
 use computer::Enemy;
 use pancurses::{Window, initscr, endwin};
 use world::{Dungeon, Level, Generable, TileType};
@@ -39,7 +40,7 @@ fn render_level(window: &Window, level: &Level) {
     }
 }
 
-fn debug_level(level: &Level) {
+fn debug_level(level: Level) {
     let grid = level.to_tilegrid().unwrap();
 
     for line in grid.raw_data().iter() {
@@ -55,9 +56,20 @@ fn main() {
     let mut dungeon = Dungeon::new(80, 24, 5);
     dungeon.generate();
 
-    for l in dungeon.levels {
-        debug_level(&l);
-    }
+    let start_location = dungeon.levels[0].get_start_point();
+
+    let mut character: Character = Character::new(
+        "Kshar".to_string(),
+        "Warror".to_string(),
+        30,
+        10,
+        10,
+        20,
+        start_location
+    );
+    character.place(start_location);
+
+    dungeon.levels.into_iter().map(debug_level);
 
     // let window = initscr();
 
