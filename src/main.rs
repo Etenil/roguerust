@@ -34,7 +34,7 @@ fn main() {
             1,
             (0, 0)
         ),
-        Dungeon::new(window.get_max_x() as usize, window.get_max_y() as usize, 5),
+        Dungeon::new((window.get_max_x() - 2) as usize, window.get_max_y() as usize, 5),
     );
 
     state.init();

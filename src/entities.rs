@@ -2,7 +2,8 @@ use std::cmp;
 
 use pancurses::{Window};
 use crate::world::{Point};
-use crate::tiling::TileType;
+use crate::tiling::{TileType, draw_block};
+
 
 pub trait Entity {
     fn info(&self) -> String;
@@ -61,18 +62,10 @@ pub trait Player {
 
 impl Render for Character {
     fn render(&self, window: &Window) {
-    //     window.mv(window.get_max_y() - 2, 0);
-    //     window.clrtoeol();
-        
-    //     window.refresh();
-
-    //     window.addstr(self.character.info() + "\n");
-
-    //     window.mv(self.character.location.1 as i32,self.character.location.0 as i32);
-    //     window.refresh();
-    //     draw_block(&window, self.character.tile_type);
-    //     window.refresh();
-
+        window.mv(self.location.1 as i32,self.location.0 as i32);
+        window.refresh();
+        draw_block(&window, &self.tile_type);
+        window.refresh();
     }
 }
 
