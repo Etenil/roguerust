@@ -1,24 +1,19 @@
 use rand::Rng;
+use crate::entities::{Entity};
+use crate::tiling::{TileGrid, Tileable, TileType};
+
+pub enum Direction {
+    North,
+    South,
+    East,
+    West
+}
 
 pub type Point = (usize, usize);
-
-#[derive(Clone)]
-pub enum TileType {
-    Empty,
-    Wall,
-    Floor,
-    StairsUp,
-    StairsDown,
-    Character,
-}
 
 enum CorridorType {
     Horizontal,
     Vertical
-}
-
-trait Tileable {
-    fn tile(&self, grid: &mut TileGrid) -> Result<(), String>;
 }
 
 const LEFT: (i8, i8) = (-1i8, 0);
@@ -144,49 +139,12 @@ impl Tileable for Corridor {
     }
 }
 
-pub struct TileGrid {
-    grid: Vec<Vec<TileType>>
-}
-
-impl<'a> TileGrid {
-    pub fn new(xsize: usize, ysize: usize) -> TileGrid {
-        let mut grid = TileGrid {
-            grid: Vec::with_capacity(ysize)
-        };
-
-        for _ in 0..ysize {
-            let mut subvec = Vec::with_capacity(xsize);
-            for _ in 0..xsize {
-                subvec.push(TileType::Empty);
-            }
-            grid.grid.push(subvec);
-        }
-
-        return grid;
-    }
-
-    fn set_tile(&mut self, x: usize, y: usize, tile: TileType) {
-        self.grid[y][x] = tile;
-    }
-
-    /// Sets a tile if nothing lies underneath it.
-    fn set_empty_tile(&mut self, x: usize, y: usize, tile: TileType) {
-        self.set_tile(x, y, match self.grid[y][x] {
-            TileType::Empty => tile,
-            _ => self.grid[y][x].clone()
-        })
-    }
-
-    pub fn raw_data(&'a self) -> &'a Vec<Vec<TileType>> {
-        &self.grid
-    }
-}
-
 pub struct Level {
     xsize: usize,
     ysize: usize,
     rooms: Vec<Room>,
     corridors: Vec<Corridor>,
+    entities: Vec<Box<dyn Entity>>,
     entrance: Point,
     exit: Point
 }
@@ -198,7 +156,7 @@ pub struct Dungeon {
     pub levels: Vec<Level>
 }
 
-pub trait Generable {
+pub trait Generatable {
     fn generate(&mut self);
 }
 
@@ -230,7 +188,7 @@ impl Dungeon {
     }
 }
 
-impl Generable for Dungeon {
+impl Generatable for Dungeon {
     fn generate(&mut self) {
         let mut level = Level::new(self.xsize, self.ysize, None);
         level.generate();
@@ -254,8 +212,9 @@ impl Level {
         Level {
             xsize,
             ysize,
-            rooms: Vec::new(),
-            corridors: Vec::new(),
+            rooms: vec![],
+            corridors: vec![],
+            entities: vec![],
             entrance: match start {
                 Some(st) => st,
                 None => (0, 0)
@@ -357,7 +316,7 @@ impl Level {
     }
 }
 
-impl Generable for Level {
+impl Generatable for Level {
     fn generate(&mut self) {
         let mut rng = rand::thread_rng();
         let room_number = rng.gen_range(3, 5);
