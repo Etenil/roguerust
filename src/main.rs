@@ -87,6 +87,9 @@ fn main() {
 
     render_level(&window, &dungeon.levels[0]);
 
+    window.keypad(true);
+    noecho();
+
     loop {
         // update actors
         // update character
