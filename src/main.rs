@@ -55,8 +55,14 @@ fn debug_level(level: Level) {
 
 
 fn main() {
+    let window = initscr();
     let mut level = 0;
-    let mut dungeon = Dungeon::new(80, 24, 5);
+
+    let mut dungeon = Dungeon::new(
+        window.get_max_x() as usize,
+        window.get_max_y() as usize - 2,
+        5
+    );
     dungeon.generate();
 
     let start_location = dungeon.levels[0].get_start_point();
@@ -71,19 +77,6 @@ fn main() {
         start_location
     );
     character.place(start_location);
-
-    // Dump the whole dungeon structure in terminal for debugging
-    match env::var("DEBUG") {
-        Ok(_) => {
-            for l in dungeon.levels {
-                debug_level(l);
-            }
-            return
-        },
-        Err(_) => ()
-    };
-
-    let window = initscr();
 
     render_level(&window, &dungeon.levels[0]);
 
