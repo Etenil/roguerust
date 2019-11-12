@@ -12,7 +12,7 @@ use std::env;
 use character::Player;
 use character::Character;
 use computer::Enemy;
-use pancurses::{Window, initscr, endwin};
+use pancurses::{Window, initscr, endwin, Input, noecho};
 use world::{Dungeon, Level, Generable, TileType};
 
 fn tile_to_str(tile: &TileType) -> &str {
@@ -22,6 +22,7 @@ fn tile_to_str(tile: &TileType) -> &str {
         TileType::Empty => " ",
         TileType::StairsDown => ">",
         TileType::StairsUp => "<",
+        TileType::Character => "@",
         _ => "?"
     }
 }
@@ -85,8 +86,24 @@ fn main() {
     let window = initscr();
 
     render_level(&window, &dungeon.levels[0]);
-    window.refresh();
-    window.getch();
 
+    loop {
+        // update actors
+        // update character
+        window.refresh();
+
+        // get input and execute it
+        match window.getch() {
+
+            Some(Input::Character('h')) => { window.addstr("q: quit\n"); },
+            // Some(Input::KeyDown) => { window.addstr("down\n"); },
+            // Some(Input::KeyUp) => { window.addch('b'); },
+            // Some(Input::KeyLeft) => { window.addch('c'); },
+            // Some(Input::KeyRight) => { window.addch('d'); },
+            Some(Input::Character('q')) => break,
+            Some(_) => (),
+            None => (),
+        }
+    }
     endwin();
 }

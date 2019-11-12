@@ -8,7 +8,8 @@ pub enum TileType {
     Wall,
     Floor,
     StairsUp,
-    StairsDown
+    StairsDown,
+    Character,
 }
 
 enum CorridorType {
