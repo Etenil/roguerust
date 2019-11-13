@@ -90,7 +90,8 @@ impl Entity for Character {
     }
 
     fn move_by(&mut self, movement: Movement) -> Result<(), String> {
-        self.previous_location = apply_movement(self.location, movement)?;
+        self.previous_location = self.location;
+        self.location = apply_movement(self.location, movement)?;
         Ok(())
     }
 

@@ -17,10 +17,10 @@ enum CorridorType {
     Vertical,
 }
 
-const LEFT: Movement = (-1, 0);
-const RIGHT: Movement = (1, 0);
-const UP: Movement = (0, -1);
-const DOWN: Movement = (0, 1);
+pub const LEFT: Movement = (-1, 0);
+pub const RIGHT: Movement = (1, 0);
+pub const UP: Movement = (0, -1);
+pub const DOWN: Movement = (0, 1);
 
 pub fn apply_movement(point: Point, movement: Movement) -> Result<Point, String> {
     let x = point.0 as i32 + movement.0 as i32;

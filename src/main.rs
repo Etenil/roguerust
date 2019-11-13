@@ -8,7 +8,7 @@ mod entities;
 mod world;
 mod tiling;
 
-use entities::Player;
+use entities::{Player, Character, Entity};
 use pancurses::{
     initscr,
     endwin,
@@ -16,7 +16,7 @@ use pancurses::{
     noecho
 };
 use state::State;
-use world::{Dungeon};
+use world::{Dungeon, LEFT, RIGHT, UP, DOWN};
 
 
 fn main() {
@@ -50,10 +50,19 @@ fn main() {
         // get input and execute it
         match window.getch() {
             Some(Input::Character('?')) => { window.addstr("q: quit\n"); },
-            Some(Input::Character('j')) => { window.addstr("down\n"); },
-            Some(Input::Character('k')) => { window.addstr("up\n"); },
-            Some(Input::Character('h')) => { window.addstr("left\n"); },
-            Some(Input::Character('l')) => { window.addstr("right\n"); },
+            Some(Input::Character('j')) => {
+                state.player.move_by(DOWN).unwrap();
+                // state.get_player_mut().move_by(DOWN).unwrap();
+            },
+            Some(Input::Character('k')) => {
+                state.get_player_mut().move_by(UP).unwrap();
+            },
+            Some(Input::Character('h')) => {
+                state.get_player_mut().move_by(LEFT).unwrap();
+            },
+            Some(Input::Character('l')) => {
+                state.get_player_mut().move_by(RIGHT).unwrap();
+            },
             Some(Input::Character('q')) => break,
             Some(_) => (),
             None => (),

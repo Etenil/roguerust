@@ -36,6 +36,10 @@ impl<'a> TileGrid {
     pub fn raw_data(&'a self) -> &'a Vec<Vec<TileType>> {
         &self.grid
     }
+
+    pub fn get_block_at(&self, x: usize, y: usize) -> &TileType {
+        &self.grid[y + 1][x]
+    }
 }
 
 pub fn tile_to_str(tile: &TileType) -> &str {

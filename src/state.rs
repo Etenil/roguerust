@@ -1,13 +1,14 @@
 use pancurses::Window;
 
-use crate::tiling::{TileType, tile_to_str};
+use crate::tiling::{TileType, TileGrid, tile_to_str};
 use crate::entities::{Character, Entity};
 use crate::world::{Dungeon, Generatable, Level};
 
 pub struct State {
     pub player: Character,
-    pub dungeon: Dungeon,
-    pub level: usize,
+    dungeon: Dungeon,
+    level: usize,
+    grid: Option<TileGrid>
 }
 
 pub fn draw_block(window: &Window, block: &TileType) {
@@ -15,26 +16,28 @@ pub fn draw_block(window: &Window, block: &TileType) {
 }
 
 impl State {
-    pub fn new(
-        player: Character,
-        dungeon: Dungeon,
-    ) -> State {
+    pub fn new(player: Character, dungeon: Dungeon) -> State {
         State {
             player,
             dungeon,
             level: 0,
+            grid: None
         }
     }
 
     pub fn init(&mut self) {
         self.dungeon.generate();
         self.player.place(self.current_level().get_start_point());
+        self.switch_level(0);
+    }
+
+    pub fn switch_level(&mut self, num_level: usize) {
+        self.level = num_level;
+        self.grid = Some(self.current_level().to_tilegrid().unwrap());
     }
 
     pub fn render_level(&self, window: &Window) {
-        let grid = self.current_level().to_tilegrid().unwrap();
-
-        for (linenum, line) in grid.raw_data().iter().enumerate() {
+        for (linenum, line) in self.grid.as_ref().unwrap().raw_data().iter().enumerate() {
             for block in line.iter() {
                 draw_block(&window, &block);
             }
@@ -43,6 +46,12 @@ impl State {
     }
 
     fn render_entity(&self, entity: &dyn Entity, window: &Window) {
+        if !entity.is_dirty() {
+            return;
+        }
+        let dirt = entity.get_previous_location();
+        window.mv(dirt.1 as i32, dirt.0 as i32);
+        draw_block(window, self.grid.as_ref().unwrap().get_block_at(dirt.0, dirt.1));
         window.mv(entity.get_location().1 as i32, entity.get_location().0 as i32);
         draw_block(window, entity.get_tiletype());
     }
@@ -57,7 +66,11 @@ impl State {
         self.render_entity(&self.player, window)
     }
 
-    fn current_level(&self) -> &Level {
+    pub fn current_level(&self) -> &Level {
         &self.dungeon.levels[self.level]
+    }
+
+    pub fn get_player_mut(&mut self) -> &mut Character {
+        &mut self.player
     }
 }
