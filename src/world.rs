@@ -1,41 +1,50 @@
+use crate::entities::{Character, Enemy, Entity};
+use crate::tiling::{TileGrid, TileType, Tileable};
 use rand::Rng;
-use pancurses::{Window};
-use crate::entities::{Character, Entity, Enemy};
-use crate::tiling::{TileGrid, Tileable, TileType, draw_block};
 
 pub type Point = (usize, usize);
+pub type Movement = (i8, i8);
 
 pub enum Direction {
     North,
     South,
     East,
-    West
+    West,
 }
 
 enum CorridorType {
     Horizontal,
-    Vertical
+    Vertical,
 }
 
-const LEFT: (i8, i8) = (-1i8, 0);
-const RIGHT: (i8, i8) = (1i8, 0);
-const UP: (i8, i8) = (0, -1i8);
-const DOWN: (i8, i8) = (0, 1i8);
+pub const LEFT: Movement = (-1, 0);
+pub const RIGHT: Movement = (1, 0);
+pub const UP: Movement = (0, -1);
+pub const DOWN: Movement = (0, 1);
+
+pub fn apply_movement(point: Point, movement: Movement) -> Result<Point, String> {
+    let x = point.0 as i32 + movement.0 as i32;
+    let y = point.1 as i32 + movement.1 as i32;
+    if x < 0 || y < 0 {
+        return Err(String::from("Can't move point off screen"));
+    }
+    Ok((x as usize, y as usize))
+}
 
 struct RoomEdge {
     start: Point,
     mid_point: Point,
     end: Point,
-    corridor_dir: (i8, i8)
+    corridor_dir: Movement,
 }
 
 impl RoomEdge {
-    pub fn new(start: Point, end: Point, corridor_dir: (i8, i8)) -> RoomEdge {
+    pub fn new(start: Point, end: Point, corridor_dir: Movement) -> RoomEdge {
         RoomEdge {
             start,
             end,
             mid_point: (end.0 - start.0 / 2, end.1 - start.1 / 2),
-            corridor_dir
+            corridor_dir,
         }
     }
 }
@@ -45,7 +54,7 @@ struct Room {
     center: Point,
     width: usize,
     height: usize,
-    edges: [RoomEdge; 4]
+    edges: [RoomEdge; 4],
 }
 
 impl Room {
@@ -54,13 +63,24 @@ impl Room {
             start,
             width,
             height,
-            center: (start.0 + (width as f32 / 2.0) as usize, start.1 + (height as f32 / 2.0) as usize),
+            center: (
+                start.0 + (width as f32 / 2.0) as usize,
+                start.1 + (height as f32 / 2.0) as usize,
+            ),
             edges: [
                 RoomEdge::new(start, (start.0 + width, start.1), UP),
                 RoomEdge::new(start, (start.0, start.1 + height), LEFT),
-                RoomEdge::new((start.0, start.1 + height), (start.0 + width, start.1 + height), DOWN),
-                RoomEdge::new((start.0 + width, start.1), (start.0 + width, start.1), RIGHT)
-            ]
+                RoomEdge::new(
+                    (start.0, start.1 + height),
+                    (start.0 + width, start.1 + height),
+                    DOWN,
+                ),
+                RoomEdge::new(
+                    (start.0 + width, start.1),
+                    (start.0 + width, start.1),
+                    RIGHT,
+                ),
+            ],
         }
     }
 }
@@ -96,7 +116,7 @@ impl Tileable for Room {
 struct Corridor {
     start: Point,
     length: usize,
-    direction: CorridorType
+    direction: CorridorType,
 }
 
 impl Corridor {
@@ -104,7 +124,7 @@ impl Corridor {
         Corridor {
             start,
             length,
-            direction
+            direction,
         }
     }
 
@@ -134,7 +154,7 @@ impl Tileable for Corridor {
         // TODO: ensure the corridor isn't leaving the grid.
         match self.direction {
             CorridorType::Horizontal => self.tile_horizontal(grid),
-            CorridorType::Vertical => self.tile_vertical(grid)
+            CorridorType::Vertical => self.tile_vertical(grid),
         }
         Ok(())
     }
@@ -148,14 +168,14 @@ pub struct Level {
     corridors: Vec<Corridor>,
     pub entities: Vec<Box<dyn Entity>>,
     entrance: Point,
-    exit: Point
+    exit: Point,
 }
 
 pub struct Dungeon {
     xsize: usize,
     ysize: usize,
     depth: usize,
-    pub levels: Vec<Level>
+    pub levels: Vec<Level>,
 }
 
 pub trait Generatable {
@@ -172,11 +192,7 @@ fn ver_dist(point1: Point, point2: Point) -> f32 {
 
 /// The distance between 2 points
 fn distance(point1: Point, point2: Point) -> f32 {
-    (
-        hor_dist(point1, point2).powf(2.0)
-        +
-        ver_dist(point1, point2).powf(2.0)
-    ).sqrt()
+    (hor_dist(point1, point2).powf(2.0) + ver_dist(point1, point2).powf(2.0)).sqrt()
 }
 
 impl Dungeon {
@@ -185,7 +201,7 @@ impl Dungeon {
             xsize,
             ysize,
             depth,
-            levels: vec![]
+            levels: vec![],
         }
     }
 }
@@ -219,14 +235,14 @@ impl Level {
             entities: vec![],
             entrance: match start {
                 Some(st) => st,
-                None => (0, 0)
+                None => (0, 0),
             },
             exit: (0, 0),
-            depth
+            depth,
         }
     }
 
-    fn to_tilegrid(&self) -> Result<TileGrid, String> {
+    pub fn to_tilegrid(&self) -> Result<TileGrid, String> {
         let mut grid = TileGrid::new(self.xsize, self.ysize);
 
         for room in &self.rooms {
@@ -247,18 +263,7 @@ impl Level {
         if self.rooms.len() > 0 {
             return self.rooms[0].center;
         }
-        return (0,0)
-    }
-
-    pub fn render(&self, window: &Window) {
-        let grid = self.to_tilegrid().unwrap();
-
-        for (linenum, line) in grid.raw_data().iter().enumerate() {
-            for block in line.iter() {
-                draw_block(&window, &block);
-            }
-            window.mv(linenum as i32, 0);
-        }
+        return (0, 0);
     }
 
     pub fn get_entrance(&self) -> Point {
@@ -271,10 +276,11 @@ impl Level {
 
     fn overlaps(&self, start: Point, width: usize, height: usize, padding: usize) -> bool {
         for room in &self.rooms {
-            if room.start.0 < start.0 + width + padding &&
-                room.start.0 + room.width + padding > start.0 &&
-                room.start.1 < start.1 + height + padding &&
-                room.start.1 + room.height + padding > start.1 {
+            if room.start.0 < start.0 + width + padding
+                && room.start.0 + room.width + padding > start.0
+                && room.start.1 < start.1 + height + padding
+                && room.start.1 + room.height + padding > start.1
+            {
                 return true;
             }
         }
@@ -283,14 +289,17 @@ impl Level {
     }
 
     fn room_distances(&self, point: Point) -> Vec<(usize, f32)> {
-        let mut dists: Vec<(usize, f32)> = self.rooms
+        let mut dists: Vec<(usize, f32)> = self
+            .rooms
             .iter()
             .enumerate()
             .map(|(room_num, room): (usize, &Room)| -> (usize, f32) {
                 (room_num, distance(point, room.center))
             })
             .collect();
-        dists.sort_by(|(_, dista): &(usize, f32), (_, distb): &(usize, f32)| dista.partial_cmp(&distb).unwrap());
+        dists.sort_by(|(_, dista): &(usize, f32), (_, distb): &(usize, f32)| {
+            dista.partial_cmp(&distb).unwrap()
+        });
         dists
     }
 
@@ -303,13 +312,13 @@ impl Level {
         // TODO: Find a way to write a lambda to generate the start point.
         let mut start: Point = (
             rng.gen_range(0, self.xsize - room_width),
-            rng.gen_range(0, self.ysize - room_height)
+            rng.gen_range(0, self.ysize - room_height),
         );
 
         while self.overlaps(start, room_width, room_height, 2) {
             start = (
                 rng.gen_range(0, self.xsize - room_width),
-                rng.gen_range(0, self.ysize - room_height)
+                rng.gen_range(0, self.ysize - room_height),
             );
         }
 
@@ -323,7 +332,7 @@ impl Level {
 
         let start = (
             (center.0 as f32 - (room_width as f32 / 2f32)).round() as usize,
-            (center.1 as f32 - (room_height as f32 / 2f32)).round() as usize
+            (center.1 as f32 - (room_height as f32 / 2f32)).round() as usize,
         );
 
         Room::new(start, room_width, room_height)
@@ -359,7 +368,7 @@ impl Generatable for Level {
             self.corridors.push(Corridor::new(
                 xorigin,
                 xlength.abs() as usize,
-                CorridorType::Horizontal
+                CorridorType::Horizontal,
             ));
 
             let angle_point = (xorigin.0 + xlength.abs() as usize, xorigin.1);
@@ -376,7 +385,7 @@ impl Generatable for Level {
             self.corridors.push(Corridor::new(
                 yorigin,
                 ylength.abs() as usize,
-                CorridorType::Vertical
+                CorridorType::Vertical,
             ));
         }
 
@@ -395,12 +404,15 @@ impl Generatable for Level {
 
             // Create the enemy
             self.entities.push(Box::<Character>::new(Enemy::new(
-                "snake".to_string(),
+                String::from("snake"),
                 2 * self.depth as i32,
                 (2.0 * self.depth as f32 * 0.6).round() as i32,
                 (20.0 * self.depth as f32 * 0.2).max(80.0).round() as i32,
                 0,
-                (room.start.0 + rng.gen_range(0, room.width), room.start.1 + rng.gen_range(0, room.height))
+                (
+                    room.start.0 + rng.gen_range(0, room.width),
+                    room.start.1 + rng.gen_range(0, room.height),
+                ),
             )));
         }
     }

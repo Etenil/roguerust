@@ -1,7 +1,6 @@
 extern crate rand;
 extern crate pancurses;
 
-#[macro_use]
 extern crate text_io;
 
 mod state;
@@ -9,7 +8,7 @@ mod entities;
 mod world;
 mod tiling;
 
-use entities::Player;
+use entities::{Player, Character, Entity};
 use pancurses::{
     initscr,
     endwin,
@@ -18,7 +17,7 @@ use pancurses::{
 };
 use std::env;
 use state::State;
-use world::{Dungeon};
+use world::{Dungeon, LEFT, RIGHT, UP, DOWN};
 
 fn get_player_name() -> String {
     match env::var_os("USER") {
@@ -33,38 +32,44 @@ fn main() {
     let mut state = State::new(
         Player::new(
             get_player_name(),
-            "Warrior".to_string(),
+            String::from("Warrior"),
             30,
             10,
             10,
-            20,
-            1,
-            (0, 0)
+            20
         ),
-        Dungeon::new(window.get_max_x() as usize, window.get_max_y() as usize, 5),
+        Dungeon::new(window.get_max_x() as usize, (window.get_max_y() - 2) as usize, 5),
     );
 
     state.init();
 
     window.keypad(true);
     noecho();
-    
-    loop {
-        // update actors
-        
-        state.render_level(&window);
 
-        // update character
-        state.show_character(&window);
+    state.render_level(&window);
+
+    loop {
+        // update
+        state.render_entities(&window);
+
+        state.render_player(&window);
 
         // get input and execute it
         match window.getch() {
-
-            Some(Input::Character('h')) => { window.addstr("q: quit\n"); },
-            // Some(Input::KeyDown) => { window.addstr("down\n"); },
-            // Some(Input::KeyUp) => { window.addch('b'); },
-            // Some(Input::KeyLeft) => { window.addch('c'); },
-            // Some(Input::KeyRight) => { window.addch('d'); },
+            Some(Input::Character('?')) => { window.addstr("q: quit\n"); },
+            Some(Input::Character('j')) => {
+                state.player.move_by(DOWN).unwrap();
+                // state.get_player_mut().move_by(DOWN).unwrap();
+            },
+            Some(Input::Character('k')) => {
+                state.get_player_mut().move_by(UP).unwrap();
+            },
+            Some(Input::Character('h')) => {
+                state.get_player_mut().move_by(LEFT).unwrap();
+            },
+            Some(Input::Character('l')) => {
+                state.get_player_mut().move_by(RIGHT).unwrap();
+            },
             Some(Input::Character('q')) => break,
             Some(_) => (),
             None => (),
