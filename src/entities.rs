@@ -1,14 +1,27 @@
 use std::cmp;
 
-use pancurses::{Window};
-use crate::world::{Point};
 use crate::tiling::TileType;
+use crate::world::{apply_movement, Movement, Point};
 
 pub trait Entity {
+    /// Get information about the entity
     fn info(&self) -> String;
+    /// Initial placement of the entity
     fn place(&mut self, location: Point);
+    /// Get the tiletype for the entity
     fn get_tiletype(&self) -> &TileType;
+    /// Get the entity's current location
     fn get_location(&self) -> &Point;
+    /// Get the entity's previous location (before it moved)
+    fn get_previous_location(&self) -> &Point;
+    /// Move the entity to another point
+    fn move_to(&mut self, location: Point);
+    /// Move the entity with a movement differential
+    fn move_by(&mut self, movement: Movement) -> Result<(), String>;
+    /// Know if the entity needs to be re-rendered
+    fn is_dirty(&self) -> bool;
+    /// Declare the entity clean
+    fn clean(&mut self);
 }
 
 #[derive(Clone)]
@@ -17,38 +30,26 @@ pub struct Character {
     pub class: String,
     pub health: i32,
     pub level: i32,
-    pub location: Point,
+    location: Point,
+    previous_location: Point,
+    dirty: bool,
     max_health: i32,
     attack: i32,
     dodge: i32,
     luck: i32,
     xp: i32,
-    tile_type: TileType
+    tile_type: TileType,
 }
 
 pub trait Enemy {
-    fn new(
-        class: String,
-        health: i32,
-        attack: i32,
-        dodge: i32,
-        luck: i32,
-        location: Point
-    ) -> Self;
+    fn new(class: String, health: i32, attack: i32, dodge: i32, luck: i32, location: Point)
+        -> Self;
 
     fn set_tile_type(&mut self, tile_type: TileType);
 }
 
 pub trait Player {
-    fn new(
-        name: String,
-        class: String,
-        health: i32,
-        attack: i32,
-        dodge: i32,
-        luck: i32,
-        level: i32
-    ) -> Self;
+    fn new(name: String, class: String, health: i32, attack: i32, dodge: i32, luck: i32) -> Self;
     fn damage(&mut self, damage_amount: i32);
     fn heal(&mut self, heal_amount: i32);
     fn attack(&self) -> i32;
@@ -59,6 +60,8 @@ pub trait Player {
 impl Entity for Character {
     fn place(&mut self, location: Point) {
         self.location = location;
+        self.previous_location = location;
+        self.dirty = true;
     }
 
     fn info(&self) -> String {
@@ -75,6 +78,29 @@ impl Entity for Character {
     fn get_location(&self) -> &Point {
         &self.location
     }
+
+    fn get_previous_location(&self) -> &Point {
+        &self.previous_location
+    }
+
+    fn move_to(&mut self, location: Point) {
+        self.previous_location = self.location;
+        self.location = location;
+        self.dirty = true;
+    }
+
+    fn move_by(&mut self, movement: Movement) -> Result<(), String> {
+        self.previous_location = apply_movement(self.location, movement)?;
+        Ok(())
+    }
+
+    fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
+    fn clean(&mut self) {
+        self.dirty = false;
+    }
 }
 
 impl Enemy for Character {
@@ -84,7 +110,7 @@ impl Enemy for Character {
         attack: i32,
         dodge: i32,
         luck: i32,
-        location: Point
+        location: Point,
     ) -> Character {
         Character {
             name: class.clone(),
@@ -97,7 +123,9 @@ impl Enemy for Character {
             level: 0,
             xp: 0,
             location: location,
-            tile_type: TileType::Character
+            previous_location: location,
+            tile_type: TileType::Character,
+            dirty: false,
         }
     }
 
@@ -114,7 +142,6 @@ impl Player for Character {
         attack: i32,
         dodge: i32,
         luck: i32,
-        level: i32
     ) -> Character {
         Character {
             name: name,
@@ -127,7 +154,9 @@ impl Player for Character {
             xp: 0,
             level: 0,
             location: (0, 0),
-            tile_type: TileType::Player
+            previous_location: (0, 0),
+            tile_type: TileType::Player,
+            dirty: false,
         }
     }
 
@@ -164,7 +193,7 @@ mod tests {
     use super::*;
 
     fn test_attack() {
-        let bob: Character = Enemy::new("Rogue".to_string(), 1, 4, 1, 4, (0, 0));
+        let bob: Character = Enemy::new(String::from("Rogue"), 1, 4, 1, 4, (0, 0));
 
         assert_eq!(bob.attack(), 6);
     }

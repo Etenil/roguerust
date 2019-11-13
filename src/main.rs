@@ -24,13 +24,12 @@ fn main() {
 
     let mut state = State::new(
         Player::new(
-            "Kshar".to_string(),
-            "Warrior".to_string(),
+            String::from("Kshar"),
+            String::from("Warrior"),
             30,
             10,
             10,
-            20,
-            1
+            20
         ),
         Dungeon::new(window.get_max_x() as usize, (window.get_max_y() - 2) as usize, 5),
     );
@@ -50,11 +49,11 @@ fn main() {
 
         // get input and execute it
         match window.getch() {
-            Some(Input::Character('h')) => { window.addstr("q: quit\n"); },
-            // Some(Input::KeyDown) => { window.addstr("down\n"); },
-            // Some(Input::KeyUp) => { window.addch('b'); },
-            // Some(Input::KeyLeft) => { window.addch('c'); },
-            // Some(Input::KeyRight) => { window.addch('d'); },
+            Some(Input::Character('?')) => { window.addstr("q: quit\n"); },
+            Some(Input::Character('j')) => { window.addstr("down\n"); },
+            Some(Input::Character('k')) => { window.addstr("up\n"); },
+            Some(Input::Character('h')) => { window.addstr("left\n"); },
+            Some(Input::Character('l')) => { window.addstr("right\n"); },
             Some(Input::Character('q')) => break,
             Some(_) => (),
             None => (),
