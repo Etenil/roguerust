@@ -188,14 +188,3 @@ impl Player for Character {
         )
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn test_attack() {
-        let bob: Character = Enemy::new(String::from("Rogue"), 1, 4, 1, 4, (0, 0));
-
-        assert_eq!(bob.attack(), 6);
-    }
-}

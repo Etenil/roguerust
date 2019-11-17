@@ -1,11 +1,13 @@
 use crate::entities::{Character, Enemy, Entity};
 use crate::tiling::{TileGrid, TileType, Tileable};
 use rand::Rng;
-use std::cmp::min;
+use std::cmp::{min, PartialEq};
+use std::fmt;
 
 pub type Point = (usize, usize);
 pub type Movement = (i8, i8);
 
+#[derive(PartialEq)]
 enum CorridorType {
     Horizontal,
     Vertical,
@@ -74,10 +76,27 @@ impl Tileable for Room {
     }
 }
 
+#[derive(PartialEq)]
 struct Corridor {
     start: Point,
     length: usize,
     direction: CorridorType,
+}
+
+impl fmt::Debug for Corridor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} corridor from ({},{}) of length {}",
+            match self.direction {
+                CorridorType::Horizontal => "Horizontal",
+                CorridorType::Vertical => "Vertical",
+            },
+            self.start.0,
+            self.start.1,
+            self.length
+        )
+    }
 }
 
 impl Corridor {
@@ -92,7 +111,7 @@ impl Corridor {
     pub fn make(start: Point, end: Point) -> Result<Corridor, String> {
         if start.0 != end.0 && start.1 != end.1 {
             return Err(String::from(
-                "Start and end points must be aligned to for a corridor",
+                "Start and end points must be aligned to make a corridor",
             ));
         }
 
@@ -417,8 +436,67 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_generates_world() {
-        let mut level = Level::new(128, 128, 1, None);
-        level.generate();
+    fn test_make_corridor_detects_horizontal() {
+        let start = (0, 0);
+        let end = (5, 0);
+
+        let corridor = Corridor::make(start, end).unwrap();
+        assert_eq!(corridor, Corridor::new(start, 5, CorridorType::Horizontal));
+    }
+
+    #[test]
+    fn test_make_corridor_detects_vertical() {
+        let start = (0, 0);
+        let end = (0, 5);
+
+        let corridor = Corridor::make(start, end).unwrap();
+        assert_eq!(corridor, Corridor::new(start, 5, CorridorType::Vertical));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_make_corridor_with_overlapping_points_should_panic() {
+        Corridor::make((0, 0), (0, 0)).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_make_corridor_with_misaligned_points_should_panic() {
+        Corridor::make((3, 3), (5, 5)).unwrap();
+    }
+
+    #[test]
+    fn test_link_corridors_returns_a_vec_of_corridors() {
+        let cor = Corridor::link((0, 0), (5, 5)).unwrap();
+
+        let exp_horz = vec![
+            Corridor::new((0, 0), 5, CorridorType::Horizontal),
+            Corridor::new((5, 0), 5, CorridorType::Vertical)
+        ];
+        let exp_vert = vec![
+            Corridor::new((0, 0), 5, CorridorType::Vertical),
+            Corridor::new((0, 5), 5, CorridorType::Horizontal)
+        ];
+
+        match cor[0].direction {
+            CorridorType::Horizontal => assert_eq!(cor, exp_horz),
+            CorridorType::Vertical => assert_eq!(cor, exp_vert)
+        };
+    }
+
+    #[test]
+    fn test_link_corridors_with_horizontal_aligned_points_returns_one_corridor() {
+        let cor = Corridor::link((0, 0), (5, 0)).unwrap();
+
+        assert_eq!(cor.len(), 1);
+        assert_eq!(cor[0], Corridor::new((0, 0), 5, CorridorType::Horizontal));
+    }
+
+    #[test]
+    fn test_link_corridors_with_vertical_aligned_points_returns_one_corridor() {
+        let cor = Corridor::link((0, 0), (0, 5)).unwrap();
+
+        assert_eq!(cor.len(), 1);
+        assert_eq!(cor[0], Corridor::new((0, 0), 5, CorridorType::Vertical));
     }
 }
