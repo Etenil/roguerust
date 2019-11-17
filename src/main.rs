@@ -8,7 +8,7 @@ mod state;
 mod tiling;
 mod world;
 
-use entities::{Character, Entity, Player};
+use entities::{Entity, Player};
 use pancurses::{endwin, initscr, noecho, Input};
 use state::State;
 use std::env;

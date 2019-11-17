@@ -6,13 +6,6 @@ use std::cmp::min;
 pub type Point = (usize, usize);
 pub type Movement = (i8, i8);
 
-pub enum Direction {
-    North,
-    South,
-    East,
-    West,
-}
-
 enum CorridorType {
     Horizontal,
     Vertical,
@@ -283,15 +276,15 @@ impl Level {
     }
 
     pub fn get_start_point(&self) -> Point {
-        if self.rooms.len() > 0 {
+        if self.rooms.is_empty() {
             return self.rooms[0].center;
         }
-        return (0, 0);
+        (0, 0)
     }
 
-    pub fn get_entrance(&self) -> Point {
-        self.entrance
-    }
+    // pub fn get_entrance(&self) -> Point {
+    //     self.entrance
+    // }
 
     pub fn get_exit(&self) -> Point {
         self.exit
@@ -308,7 +301,7 @@ impl Level {
             }
         }
 
-        return false;
+        false
     }
 
     fn room_distances(&self, point: Point) -> Vec<(usize, f32)> {

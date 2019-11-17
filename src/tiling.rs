@@ -18,7 +18,7 @@ impl TileGrid {
             grid.grid.push(subvec);
         }
 
-        return grid;
+        grid
     }
 
     pub fn set_tile(&mut self, x: usize, y: usize, tile: TileType) {
