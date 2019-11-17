@@ -1,6 +1,7 @@
 use crate::entities::{Character, Enemy, Entity};
 use crate::tiling::{TileGrid, TileType, Tileable};
 use rand::Rng;
+use std::cmp::min;
 
 pub type Point = (usize, usize);
 pub type Movement = (i8, i8);
@@ -31,30 +32,11 @@ pub fn apply_movement(point: Point, movement: Movement) -> Result<Point, String>
     Ok((x as usize, y as usize))
 }
 
-struct RoomEdge {
-    start: Point,
-    mid_point: Point,
-    end: Point,
-    corridor_dir: Movement,
-}
-
-impl RoomEdge {
-    pub fn new(start: Point, end: Point, corridor_dir: Movement) -> RoomEdge {
-        RoomEdge {
-            start,
-            end,
-            mid_point: (end.0 - start.0 / 2, end.1 - start.1 / 2),
-            corridor_dir,
-        }
-    }
-}
-
 struct Room {
     start: Point,
     center: Point,
     width: usize,
-    height: usize,
-    edges: [RoomEdge; 4],
+    height: usize
 }
 
 impl Room {
@@ -64,23 +46,9 @@ impl Room {
             width,
             height,
             center: (
-                start.0 + (width as f32 / 2.0) as usize,
-                start.1 + (height as f32 / 2.0) as usize,
-            ),
-            edges: [
-                RoomEdge::new(start, (start.0 + width, start.1), UP),
-                RoomEdge::new(start, (start.0, start.1 + height), LEFT),
-                RoomEdge::new(
-                    (start.0, start.1 + height),
-                    (start.0 + width, start.1 + height),
-                    DOWN,
-                ),
-                RoomEdge::new(
-                    (start.0 + width, start.1),
-                    (start.0 + width, start.1),
-                    RIGHT,
-                ),
-            ],
+                start.0 + (width as f32 / 2.0).floor() as usize,
+                start.1 + (height as f32 / 2.0).floor() as usize,
+            )
         }
     }
 }
@@ -92,7 +60,7 @@ impl Tileable for Room {
         let endy = self.start.1 + self.height;
 
         // Set the walls
-        for x in self.start.0..(endx + 1) {
+        for x in self.start.0..=endx {
             grid.set_empty_tile(x, self.start.1, TileType::Wall);
             grid.set_empty_tile(x, endy, TileType::Wall);
         }
@@ -126,6 +94,43 @@ impl Corridor {
             length,
             direction,
         }
+    }
+
+    pub fn make(start: Point, end: Point) -> Result<Corridor, String> {
+        if start.0 != end.0 && start.1 != end.1 {
+            return Err(String::from("Start and end points must be aligned to for a corridor"));
+        }
+
+        let length = distance(start, end);
+        if length < 1.0 {
+            return Err(String::from("Can't create 0-length corridor"));
+        }
+
+        let dir = if start.0 == end.0 { CorridorType::Vertical } else { CorridorType::Horizontal };
+        let origin = match dir {
+            CorridorType::Horizontal => if start.0 < end.0 { start } else { end },
+            CorridorType::Vertical => if start.1 < end.1 { start } else { end },
+        };
+
+        Ok(Corridor::new(
+            origin,
+            length.round() as usize,
+            dir
+        ))
+    }
+
+    pub fn link(start: Point, end: Point) -> Result<Vec<Corridor>, String> {
+        if start.0 == end.0 || start.1 == end.1 {
+            return Ok(vec![ Corridor::make(start, end)? ]);
+        }
+        let mut rng = rand::thread_rng();
+        let start_hor = rng.gen_bool(0.5);
+        let angle_point = if start_hor { (end.0, start.1) } else { (start.0, end.1) };
+
+        Ok(vec![
+            Corridor::make(start, angle_point)?,
+            Corridor::make(angle_point, end)?
+        ])
     }
 
     fn tile_vertical(&self, grid: &mut TileGrid) {
@@ -327,12 +332,12 @@ impl Level {
 
     fn centered_room(&self, center: Point) -> Room {
         let mut rng = rand::thread_rng();
-        let room_width = rng.gen_range(3, 12);
-        let room_height = rng.gen_range(3, 12);
+        let room_width: usize = rng.gen_range(3, min(min(12, (self.xsize - center.0) * 2), center.0 * 2));
+        let room_height: usize = rng.gen_range(3, min(min(12, (self.ysize - center.1) * 2), center.1 * 2));
 
         let start = (
-            (center.0 as f32 - (room_width as f32 / 2f32)).round() as usize,
-            (center.1 as f32 - (room_height as f32 / 2f32)).round() as usize,
+            (center.0 as f32 - (room_width as f32 / 2f32)).floor() as usize,
+            (center.1 as f32 - (room_height as f32 / 2f32)).floor() as usize,
         );
 
         Room::new(start, room_width, room_height)
@@ -359,34 +364,10 @@ impl Generatable for Level {
             let distances = self.room_distances(room.center);
             let nearest_room = &self.rooms[distances[1].0];
 
-            let mut xorigin = room.center;
-            let xlength = hor_dist(room.center, nearest_room.center);
-            if xlength < 0f32 {
-                xorigin = nearest_room.center;
-            }
-
-            self.corridors.push(Corridor::new(
-                xorigin,
-                xlength.abs() as usize,
-                CorridorType::Horizontal,
-            ));
-
-            let angle_point = (xorigin.0 + xlength.abs() as usize, xorigin.1);
-            let mut destination = nearest_room;
-            if destination.center.1 == angle_point.1 {
-                destination = room
-            }
-            let mut yorigin = angle_point;
-            let ylength = ver_dist(yorigin, destination.center);
-            if ylength < 0f32 {
-                yorigin = destination.center;
-            }
-
-            self.corridors.push(Corridor::new(
-                yorigin,
-                ylength.abs() as usize,
-                CorridorType::Vertical,
-            ));
+            match Corridor::link(room.center, nearest_room.center) {
+                Ok(mut cor) => self.corridors.append(&mut cor),
+                Err(e) => println!("{}", e)
+            };
         }
 
         // Create entrance and exit
