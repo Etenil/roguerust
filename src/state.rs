@@ -1,14 +1,14 @@
 use pancurses::Window;
 
-use crate::tiling::{TileType, TileGrid, tile_to_str};
 use crate::entities::{Character, Entity};
+use crate::tiling::{tile_to_str, TileGrid, TileType};
 use crate::world::{Dungeon, Generatable, Level};
 
 pub struct State {
     pub player: Character,
     dungeon: Dungeon,
     level: usize,
-    grid: Option<TileGrid>
+    grid: Option<TileGrid>,
 }
 
 pub fn draw_block(window: &Window, block: &TileType) {
@@ -21,7 +21,7 @@ impl State {
             player,
             dungeon,
             level: 0,
-            grid: None
+            grid: None,
         }
     }
 
@@ -51,8 +51,14 @@ impl State {
         }
         let dirt = entity.get_previous_location();
         window.mv(dirt.1 as i32, dirt.0 as i32);
-        draw_block(window, self.grid.as_ref().unwrap().get_block_at(dirt.0, dirt.1));
-        window.mv(entity.get_location().1 as i32, entity.get_location().0 as i32);
+        draw_block(
+            window,
+            self.grid.as_ref().unwrap().get_block_at(dirt.0, dirt.1),
+        );
+        window.mv(
+            entity.get_location().1 as i32,
+            entity.get_location().0 as i32,
+        );
         draw_block(window, entity.get_tiletype());
     }
 

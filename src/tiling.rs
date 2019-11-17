@@ -1,13 +1,13 @@
 extern crate pancurses;
 
 pub struct TileGrid {
-    grid: Vec<Vec<TileType>>
+    grid: Vec<Vec<TileType>>,
 }
 
 impl TileGrid {
     pub fn new(xsize: usize, ysize: usize) -> TileGrid {
         let mut grid = TileGrid {
-            grid: Vec::with_capacity(ysize)
+            grid: Vec::with_capacity(ysize),
         };
 
         for _ in 0..ysize {
@@ -27,13 +27,17 @@ impl TileGrid {
 
     /// Sets a tile if nothing lies underneath it.
     pub fn set_empty_tile(&mut self, x: usize, y: usize, tile: TileType) {
-        self.set_tile(x, y, match self.grid[y][x] {
-            TileType::Empty => tile,
-            _ => self.grid[y][x].clone()
-        })
+        self.set_tile(
+            x,
+            y,
+            match self.grid[y][x] {
+                TileType::Empty => tile,
+                _ => self.grid[y][x].clone(),
+            },
+        )
     }
 
-    pub fn raw_data(& self) -> & Vec<Vec<TileType>> {
+    pub fn raw_data(&self) -> &Vec<Vec<TileType>> {
         &self.grid
     }
 
@@ -50,7 +54,7 @@ pub fn tile_to_str(tile: &TileType) -> &str {
         TileType::StairsDown => ">",
         TileType::StairsUp => "<",
         TileType::Player => "@",
-        _ => "?"
+        _ => "?",
     }
 }
 
@@ -66,5 +70,5 @@ pub enum TileType {
     StairsUp,
     StairsDown,
     Character,
-    Player
+    Player,
 }

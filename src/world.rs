@@ -36,7 +36,7 @@ struct Room {
     start: Point,
     center: Point,
     width: usize,
-    height: usize
+    height: usize,
 }
 
 impl Room {
@@ -48,7 +48,7 @@ impl Room {
             center: (
                 start.0 + (width as f32 / 2.0).floor() as usize,
                 start.1 + (height as f32 / 2.0).floor() as usize,
-            )
+            ),
         }
     }
 }
@@ -98,7 +98,9 @@ impl Corridor {
 
     pub fn make(start: Point, end: Point) -> Result<Corridor, String> {
         if start.0 != end.0 && start.1 != end.1 {
-            return Err(String::from("Start and end points must be aligned to for a corridor"));
+            return Err(String::from(
+                "Start and end points must be aligned to for a corridor",
+            ));
         }
 
         let length = distance(start, end);
@@ -106,30 +108,46 @@ impl Corridor {
             return Err(String::from("Can't create 0-length corridor"));
         }
 
-        let dir = if start.0 == end.0 { CorridorType::Vertical } else { CorridorType::Horizontal };
+        let dir = if start.0 == end.0 {
+            CorridorType::Vertical
+        } else {
+            CorridorType::Horizontal
+        };
         let origin = match dir {
-            CorridorType::Horizontal => if start.0 < end.0 { start } else { end },
-            CorridorType::Vertical => if start.1 < end.1 { start } else { end },
+            CorridorType::Horizontal => {
+                if start.0 < end.0 {
+                    start
+                } else {
+                    end
+                }
+            }
+            CorridorType::Vertical => {
+                if start.1 < end.1 {
+                    start
+                } else {
+                    end
+                }
+            }
         };
 
-        Ok(Corridor::new(
-            origin,
-            length.round() as usize,
-            dir
-        ))
+        Ok(Corridor::new(origin, length.round() as usize, dir))
     }
 
     pub fn link(start: Point, end: Point) -> Result<Vec<Corridor>, String> {
         if start.0 == end.0 || start.1 == end.1 {
-            return Ok(vec![ Corridor::make(start, end)? ]);
+            return Ok(vec![Corridor::make(start, end)?]);
         }
         let mut rng = rand::thread_rng();
         let start_hor = rng.gen_bool(0.5);
-        let angle_point = if start_hor { (end.0, start.1) } else { (start.0, end.1) };
+        let angle_point = if start_hor {
+            (end.0, start.1)
+        } else {
+            (start.0, end.1)
+        };
 
         Ok(vec![
             Corridor::make(start, angle_point)?,
-            Corridor::make(angle_point, end)?
+            Corridor::make(angle_point, end)?,
         ])
     }
 
@@ -332,8 +350,10 @@ impl Level {
 
     fn centered_room(&self, center: Point) -> Room {
         let mut rng = rand::thread_rng();
-        let room_width: usize = rng.gen_range(3, min(min(12, (self.xsize - center.0) * 2), center.0 * 2));
-        let room_height: usize = rng.gen_range(3, min(min(12, (self.ysize - center.1) * 2), center.1 * 2));
+        let room_width: usize =
+            rng.gen_range(3, min(min(12, (self.xsize - center.0) * 2), center.0 * 2));
+        let room_height: usize =
+            rng.gen_range(3, min(min(12, (self.ysize - center.1) * 2), center.1 * 2));
 
         let start = (
             (center.0 as f32 - (room_width as f32 / 2f32)).floor() as usize,
@@ -366,7 +386,7 @@ impl Generatable for Level {
 
             match Corridor::link(room.center, nearest_room.center) {
                 Ok(mut cor) => self.corridors.append(&mut cor),
-                Err(e) => println!("{}", e)
+                Err(e) => println!("{}", e),
             };
         }
 
