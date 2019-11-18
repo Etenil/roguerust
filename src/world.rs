@@ -323,21 +323,6 @@ impl Level {
         false
     }
 
-    fn room_distances(&self, point: Point) -> Vec<(usize, f32)> {
-        let mut dists: Vec<(usize, f32)> = self
-            .rooms
-            .iter()
-            .enumerate()
-            .map(|(room_num, room): (usize, &Room)| -> (usize, f32) {
-                (room_num, distance(point, room.center))
-            })
-            .collect();
-        dists.sort_by(|(_, dista): &(usize, f32), (_, distb): &(usize, f32)| {
-            dista.partial_cmp(&distb).unwrap()
-        });
-        dists
-    }
-
     fn random_room(&self) -> Result<Room, String> {
         // TODO: Detect when not enough space is left to allocate a room.
         let mut rng = rand::thread_rng();
@@ -391,12 +376,15 @@ impl Generatable for Level {
         }
 
         // Generate corridors
-        for room in &self.rooms {
+        for (i, room) in self.rooms.iter().enumerate() {
             // Find the nearest room.
-            let distances = self.room_distances(room.center);
-            let nearest_room = &self.rooms[distances[1].0];
+            let next_room = if i == self.rooms.len() - 1 {
+                &self.rooms[0]
+            } else {
+                &self.rooms[i + 1]
+            };
 
-            match Corridor::link(room.center, nearest_room.center) {
+            match Corridor::link(room.center, next_room.center) {
                 Ok(mut cor) => self.corridors.append(&mut cor),
                 Err(e) => println!("{}", e),
             };
