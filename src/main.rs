@@ -1,6 +1,5 @@
-extern crate pancurses;
+extern crate crossterm;
 extern crate rand;
-
 extern crate text_io;
 
 mod entities;
@@ -9,9 +8,14 @@ mod tiling;
 mod world;
 
 use entities::{Entity, Player};
-use pancurses::{endwin, initscr, noecho, Input};
 use state::State;
 use std::env;
+use std::io::{stdout, Write};
+use crossterm::{execute, Output};
+use crossterm::cursor;
+use crossterm::screen::{EnterAlternateScreen, LeaveAlternateScreen, RawScreen};
+use crossterm::input::{input, InputEvent, KeyEvent};
+use crossterm::terminal;
 use world::{Dungeon, DOWN, LEFT, RIGHT, UP};
 
 fn get_player_name() -> String {
@@ -22,53 +26,48 @@ fn get_player_name() -> String {
 }
 
 fn main() {
-    let window = initscr();
+    let term_size = terminal::size().unwrap();
 
     let mut state = State::new(
         Player::new(get_player_name(), String::from("Warrior"), 30, 10, 10, 20),
         Dungeon::new(
-            window.get_max_x() as usize,
-            (window.get_max_y() - 2) as usize,
+            term_size.0 as usize,
+            (term_size.1 - 2) as usize,
             5,
         ),
     );
 
     state.init();
 
-    window.keypad(true);
-    noecho();
+    execute!(stdout(), EnterAlternateScreen).unwrap();
+    execute!(stdout(), cursor::Hide).unwrap();
 
-    state.render_level(&window);
+    let _raw = RawScreen::into_raw_mode();
+
+    state.render_level();
+
+    let input = input();
+    let mut reader = input.read_sync();
 
     loop {
         // update
-        state.render_entities(&window);
+        state.render_entities();
 
-        state.render_player(&window);
+        state.render_player();
 
-        // get input and execute it
-        match window.getch() {
-            Some(Input::Character('?')) => {
-                window.addstr("q: quit\n");
+        if let Some(event) = reader.next() {
+            match event {
+                InputEvent::Keyboard(KeyEvent::Char('q')) => break,
+                InputEvent::Keyboard(KeyEvent::Char('?')) => execute!(stdout(), Output("q: quit")).unwrap(),
+                InputEvent::Keyboard(KeyEvent::Char('j')) => state.player.move_by(DOWN).unwrap(),
+                InputEvent::Keyboard(KeyEvent::Char('k')) => state.player.move_by(UP).unwrap(),
+                InputEvent::Keyboard(KeyEvent::Char('h')) => state.player.move_by(LEFT).unwrap(),
+                InputEvent::Keyboard(KeyEvent::Char('l')) => state.player.move_by(RIGHT).unwrap(),
+                _ => ()
             }
-            Some(Input::Character('j')) => {
-                state.player.move_by(DOWN).unwrap();
-                // state.get_player_mut().move_by(DOWN).unwrap();
-            }
-            Some(Input::Character('k')) => {
-                state.get_player_mut().move_by(UP).unwrap();
-            }
-            Some(Input::Character('h')) => {
-                state.get_player_mut().move_by(LEFT).unwrap();
-            }
-            Some(Input::Character('l')) => {
-                state.get_player_mut().move_by(RIGHT).unwrap();
-            }
-            Some(Input::Character('q')) => break,
-            Some(_) => (),
-            None => (),
         }
         // actors actions (normally attack / interact if on same location as the character)
     }
-    endwin();
+
+    execute!(stdout(), LeaveAlternateScreen).unwrap();
 }

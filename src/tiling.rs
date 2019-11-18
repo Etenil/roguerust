@@ -1,5 +1,3 @@
-extern crate pancurses;
-
 pub struct TileGrid {
     grid: Vec<Vec<TileType>>,
 }

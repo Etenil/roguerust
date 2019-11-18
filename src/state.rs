@@ -1,7 +1,9 @@
-use pancurses::Window;
+use std::io::{stdout, Write};
+use crossterm::{queue, Output};
+use crossterm::cursor::{MoveTo};
 
 use crate::entities::{Character, Entity};
-use crate::tiling::{tile_to_str, TileGrid, TileType};
+use crate::tiling::{tile_to_str, TileGrid};
 use crate::world::{Dungeon, Generatable, Level};
 
 pub struct State {
@@ -9,10 +11,6 @@ pub struct State {
     dungeon: Dungeon,
     level: usize,
     grid: Option<TileGrid>,
-}
-
-pub fn draw_block(window: &Window, block: &TileType) {
-    window.printw(tile_to_str(block));
 }
 
 impl State {
@@ -27,8 +25,9 @@ impl State {
 
     pub fn init(&mut self) {
         self.dungeon.generate();
-        self.player.place(self.current_level().get_start_point());
         self.switch_level(0);
+        eprintln!("{:?}", self.current_level().get_start_point());
+        self.player.place(self.current_level().get_start_point());
     }
 
     pub fn switch_level(&mut self, num_level: usize) {
@@ -36,47 +35,51 @@ impl State {
         self.grid = Some(self.current_level().to_tilegrid().unwrap());
     }
 
-    pub fn render_level(&self, window: &Window) {
+    pub fn render_level(&self) {
+        let mut sout = stdout();
         for (linenum, line) in self.grid.as_ref().unwrap().raw_data().iter().enumerate() {
-            for block in line.iter() {
-                draw_block(&window, &block);
+            let linestr = line.iter().map(tile_to_str).collect::<Vec<&str>>();
+            let mut linestr2 = String::from("");
+            for chr in linestr {
+                linestr2.push_str(chr);
             }
-            window.mv(linenum as i32, 0);
+            queue!(
+                sout,
+                Output(linestr2),
+                MoveTo(0, linenum as u16)
+            ).unwrap();
+            sout.flush().unwrap();
         }
     }
 
-    fn render_entity(&self, entity: &dyn Entity, window: &Window) {
+    fn render_entity(&self, entity: &dyn Entity) {
         if !entity.is_dirty() {
             return;
         }
         let dirt = entity.get_previous_location();
-        window.mv(dirt.1 as i32, dirt.0 as i32);
-        draw_block(
-            window,
-            self.grid.as_ref().unwrap().get_block_at(dirt.0, dirt.1),
-        );
-        window.mv(
-            entity.get_location().1 as i32,
-            entity.get_location().0 as i32,
-        );
-        draw_block(window, entity.get_tiletype());
+        let background = self.grid.as_ref().unwrap().get_block_at(dirt.0, dirt.1);
+        let mut sout = stdout();
+        queue!(
+            sout,
+            MoveTo(dirt.0 as u16, dirt.1 as u16),
+            Output(tile_to_str(background)),
+            MoveTo(entity.get_location().0 as u16, entity.get_location().1 as u16),
+            Output(tile_to_str(entity.get_tiletype()))
+        ).unwrap();
+        sout.flush().unwrap();
     }
 
-    pub fn render_entities(&self, window: &Window) {
+    pub fn render_entities(&self) {
         for e in self.current_level().entities.iter() {
-            self.render_entity(&**e, window);
+            self.render_entity(&**e);
         }
     }
 
-    pub fn render_player(&self, window: &Window) {
-        self.render_entity(&self.player, window)
+    pub fn render_player(&self) {
+        self.render_entity(&self.player)
     }
 
     pub fn current_level(&self) -> &Level {
         &self.dungeon.levels[self.level]
-    }
-
-    pub fn get_player_mut(&mut self) -> &mut Character {
-        &mut self.player
     }
 }

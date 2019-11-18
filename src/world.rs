@@ -295,7 +295,7 @@ impl Level {
     }
 
     pub fn get_start_point(&self) -> Point {
-        if self.rooms.is_empty() {
+        if !self.rooms.is_empty() {
             return self.rooms[0].center;
         }
         (0, 0)
