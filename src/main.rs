@@ -70,4 +70,5 @@ fn main() {
     }
 
     execute!(stdout(), LeaveAlternateScreen).unwrap();
+    execute!(stdout(), cursor::Show).unwrap();
 }
