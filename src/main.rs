@@ -61,6 +61,11 @@ fn main() {
                 InputEvent::Keyboard(KeyEvent::Char('k')) => state.player.move_by(UP).unwrap(),
                 InputEvent::Keyboard(KeyEvent::Char('h')) => state.player.move_by(LEFT).unwrap(),
                 InputEvent::Keyboard(KeyEvent::Char('l')) => state.player.move_by(RIGHT).unwrap(),
+                // Arrow keys for noobs
+                InputEvent::Keyboard(KeyEvent::Down) => state.player.move_by(DOWN).unwrap(),
+                InputEvent::Keyboard(KeyEvent::Up) => state.player.move_by(UP).unwrap(),
+                InputEvent::Keyboard(KeyEvent::Left) => state.player.move_by(LEFT).unwrap(),
+                InputEvent::Keyboard(KeyEvent::Right) => state.player.move_by(RIGHT).unwrap(),
                 _ => (),
             }
         }
