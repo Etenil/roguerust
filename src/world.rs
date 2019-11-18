@@ -471,16 +471,16 @@ mod tests {
 
         let exp_horz = vec![
             Corridor::new((0, 0), 5, CorridorType::Horizontal),
-            Corridor::new((5, 0), 5, CorridorType::Vertical)
+            Corridor::new((5, 0), 5, CorridorType::Vertical),
         ];
         let exp_vert = vec![
             Corridor::new((0, 0), 5, CorridorType::Vertical),
-            Corridor::new((0, 5), 5, CorridorType::Horizontal)
+            Corridor::new((0, 5), 5, CorridorType::Horizontal),
         ];
 
         match cor[0].direction {
             CorridorType::Horizontal => assert_eq!(cor, exp_horz),
-            CorridorType::Vertical => assert_eq!(cor, exp_vert)
+            CorridorType::Vertical => assert_eq!(cor, exp_vert),
         };
     }
 

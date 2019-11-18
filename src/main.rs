@@ -7,15 +7,15 @@ mod state;
 mod tiling;
 mod world;
 
+use crossterm::cursor;
+use crossterm::input::{input, InputEvent, KeyEvent};
+use crossterm::screen::{EnterAlternateScreen, LeaveAlternateScreen, RawScreen};
+use crossterm::terminal;
+use crossterm::{execute, Output};
 use entities::{Entity, Player};
 use state::State;
 use std::env;
 use std::io::{stdout, Write};
-use crossterm::{execute, Output};
-use crossterm::cursor;
-use crossterm::screen::{EnterAlternateScreen, LeaveAlternateScreen, RawScreen};
-use crossterm::input::{input, InputEvent, KeyEvent};
-use crossterm::terminal;
 use world::{Dungeon, DOWN, LEFT, RIGHT, UP};
 
 fn get_player_name() -> String {
@@ -30,11 +30,7 @@ fn main() {
 
     let mut state = State::new(
         Player::new(get_player_name(), String::from("Warrior"), 30, 10, 10, 20),
-        Dungeon::new(
-            term_size.0 as usize,
-            (term_size.1 - 2) as usize,
-            5,
-        ),
+        Dungeon::new(term_size.0 as usize, (term_size.1 - 2) as usize, 5),
     );
 
     state.init();
@@ -58,12 +54,14 @@ fn main() {
         if let Some(event) = reader.next() {
             match event {
                 InputEvent::Keyboard(KeyEvent::Char('q')) => break,
-                InputEvent::Keyboard(KeyEvent::Char('?')) => execute!(stdout(), Output("q: quit")).unwrap(),
+                InputEvent::Keyboard(KeyEvent::Char('?')) => {
+                    execute!(stdout(), Output("q: quit")).unwrap()
+                }
                 InputEvent::Keyboard(KeyEvent::Char('j')) => state.player.move_by(DOWN).unwrap(),
                 InputEvent::Keyboard(KeyEvent::Char('k')) => state.player.move_by(UP).unwrap(),
                 InputEvent::Keyboard(KeyEvent::Char('h')) => state.player.move_by(LEFT).unwrap(),
                 InputEvent::Keyboard(KeyEvent::Char('l')) => state.player.move_by(RIGHT).unwrap(),
-                _ => ()
+                _ => (),
             }
         }
         // actors actions (normally attack / interact if on same location as the character)

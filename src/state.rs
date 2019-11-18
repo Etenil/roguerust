@@ -1,6 +1,6 @@
-use std::io::{stdout, Write};
+use crossterm::cursor::MoveTo;
 use crossterm::{queue, Output};
-use crossterm::cursor::{MoveTo};
+use std::io::{stdout, Write};
 
 use crate::entities::{Character, Entity};
 use crate::tiling::{tile_to_str, TileGrid};
@@ -43,11 +43,7 @@ impl State {
             for chr in linestr {
                 linestr2.push_str(chr);
             }
-            queue!(
-                sout,
-                Output(linestr2),
-                MoveTo(0, linenum as u16)
-            ).unwrap();
+            queue!(sout, Output(linestr2), MoveTo(0, linenum as u16)).unwrap();
             sout.flush().unwrap();
         }
     }
@@ -63,9 +59,13 @@ impl State {
             sout,
             MoveTo(dirt.0 as u16, dirt.1 as u16),
             Output(tile_to_str(background)),
-            MoveTo(entity.get_location().0 as u16, entity.get_location().1 as u16),
+            MoveTo(
+                entity.get_location().0 as u16,
+                entity.get_location().1 as u16
+            ),
             Output(tile_to_str(entity.get_tiletype()))
-        ).unwrap();
+        )
+        .unwrap();
         sout.flush().unwrap();
     }
 
