@@ -1,7 +1,7 @@
 ROGUERUST
 =========
 
-A Rogue-like game written in Rust. Please see `TODO.md` for more info.
+A text-only old-school Roguelike game written in Rust. Please see `TODO.md` for more info.
 
 What does it look like?
 -----------------------

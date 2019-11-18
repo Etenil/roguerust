@@ -1,3 +1,4 @@
-- Refactor game world into a tile grid
-- Add a proper game world generator that creates a tile grid
-- Add entities (characters, items etc.)
+- Add unit tests
+- Add walls collision support
+- Add basic entity interactions (staircases etc.)
+- Add equipment system
