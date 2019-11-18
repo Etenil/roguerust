@@ -51,6 +51,8 @@ fn main() {
 
         state.render_player();
 
+        state.render_ui();
+
         if let Some(event) = reader.next() {
             match event {
                 InputEvent::Keyboard(KeyEvent::Char('q')) => break,

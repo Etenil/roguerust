@@ -2,7 +2,7 @@ use crossterm::cursor::MoveTo;
 use crossterm::{queue, Output};
 use std::io::{stdout, Write};
 
-use crate::entities::{Character, Entity};
+use crate::entities::{Character, Player, Entity};
 use crate::tiling::{tile_to_str, TileGrid};
 use crate::world::{Dungeon, Generatable, Level};
 
@@ -76,6 +76,17 @@ impl State {
 
     pub fn render_player(&self) {
         self.render_entity(&self.player)
+    }
+
+    pub fn render_ui(&self) {
+        let mut sout = stdout();
+        queue!(
+            sout,
+            MoveTo(0, (self.dungeon.ysize + 1) as u16),
+            Output(self.player.stats())
+        )
+        .unwrap();
+        sout.flush().unwrap();
     }
 
     pub fn current_level(&self) -> &Level {

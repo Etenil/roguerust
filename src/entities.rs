@@ -183,8 +183,8 @@ impl Player for Character {
 
     fn stats(&self) -> String {
         format!(
-            "{} - hp: {}/{} attack: {} dodge: {} luck: {} experience: {}",
-            self.class, self.health, self.max_health, self.attack, self.dodge, self.luck, self.xp
+            "{}({}) - hp: {}/{} attack: {} dodge: {} luck: {} experience: {}",
+            self.name, self.class, self.health, self.max_health, self.attack, self.dodge, self.luck, self.xp
         )
     }
 }

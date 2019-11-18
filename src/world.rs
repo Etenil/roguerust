@@ -221,8 +221,8 @@ pub struct Level {
 }
 
 pub struct Dungeon {
-    xsize: usize,
-    ysize: usize,
+    pub xsize: usize,
+    pub ysize: usize,
     depth: usize,
     pub levels: Vec<Level>,
 }
