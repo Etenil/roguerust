@@ -26,7 +26,6 @@ impl State {
     pub fn init(&mut self) {
         self.dungeon.generate();
         self.switch_level(0);
-        eprintln!("{:?}", self.current_level().get_start_point());
         self.player.place(self.current_level().get_start_point());
     }
 

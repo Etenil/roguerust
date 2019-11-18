@@ -171,6 +171,13 @@ impl Corridor {
             grid.set_tile(x, y, TileType::Floor);
             grid.set_empty_tile(x + 1, y, TileType::Wall);
         }
+        // Wall ends
+        grid.set_empty_tile(x - 1, self.start.1, TileType::Wall);
+        grid.set_empty_tile(x, self.start.1, TileType::Wall);
+        grid.set_empty_tile(x + 1, self.start.1, TileType::Wall);
+        grid.set_empty_tile(x - 1, endy, TileType::Wall);
+        grid.set_empty_tile(x, endy, TileType::Wall);
+        grid.set_empty_tile(x + 1, endy, TileType::Wall);
     }
 
     fn tile_horizontal(&self, grid: &mut TileGrid) {
@@ -181,6 +188,13 @@ impl Corridor {
             grid.set_tile(x, y, TileType::Floor);
             grid.set_empty_tile(x, y + 1, TileType::Wall);
         }
+        // Wall ends
+        grid.set_empty_tile(self.start.0, y - 1, TileType::Wall);
+        grid.set_empty_tile(self.start.0, y, TileType::Wall);
+        grid.set_empty_tile(self.start.0, y + 1, TileType::Wall);
+        grid.set_empty_tile(endx, y - 1, TileType::Wall);
+        grid.set_empty_tile(endx, y, TileType::Wall);
+        grid.set_empty_tile(endx, y + 1, TileType::Wall);
     }
 }
 
