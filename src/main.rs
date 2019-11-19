@@ -18,7 +18,7 @@ use std::env;
 use std::io::{stdout, Write};
 use world::{Dungeon, DOWN, LEFT, RIGHT, UP};
 
-fn get_player_name() -> String {
+fn player_name() -> String {
     match env::var_os("USER") {
         Some(val) => val.into_string().unwrap(),
         None => String::from("Kshar"),
@@ -29,7 +29,7 @@ fn main() {
     let term_size = terminal::size().unwrap();
 
     let mut state = State::new(
-        Player::new(get_player_name(), String::from("Warrior"), 30, 10, 10, 20),
+        Player::new(player_name(), String::from("Warrior"), 30, 10, 10, 20),
         Dungeon::new(term_size.0 as usize, (term_size.1 - 2) as usize, 5),
     );
 

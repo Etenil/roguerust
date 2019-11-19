@@ -26,7 +26,7 @@ impl State {
     pub fn init(&mut self) {
         self.dungeon.generate();
         self.switch_level(0);
-        self.player.place(self.current_level().get_start_point());
+        self.player.place(self.current_level().start_point());
     }
 
     pub fn switch_level(&mut self, num_level: usize) {
@@ -51,18 +51,15 @@ impl State {
         if !entity.is_dirty() {
             return;
         }
-        let dirt = entity.get_previous_location();
-        let background = self.grid.as_ref().unwrap().get_block_at(dirt.0, dirt.1);
+        let dirt = entity.previous_location();
+        let background = self.grid.as_ref().unwrap().block_at(dirt.0, dirt.1);
         let mut sout = stdout();
         queue!(
             sout,
             MoveTo(dirt.0 as u16, dirt.1 as u16),
             Output(tile_to_str(background)),
-            MoveTo(
-                entity.get_location().0 as u16,
-                entity.get_location().1 as u16
-            ),
-            Output(tile_to_str(entity.get_tiletype()))
+            MoveTo(entity.location().0 as u16, entity.location().1 as u16),
+            Output(tile_to_str(entity.tiletype()))
         )
         .unwrap();
         sout.flush().unwrap();
@@ -82,7 +79,7 @@ impl State {
         let mut sout = stdout();
         queue!(
             sout,
-            MoveTo(0, (self.dungeon.get_ysize() + 1) as u16),
+            MoveTo(0, (self.dungeon.ysize() + 1) as u16),
             Output(self.player.stats())
         )
         .unwrap();

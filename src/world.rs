@@ -254,7 +254,7 @@ impl Dungeon {
         }
     }
 
-    pub fn get_ysize(&self) -> usize {
+    pub fn ysize(&self) -> usize {
         self.ysize
     }
 }
@@ -263,13 +263,13 @@ impl Generatable for Dungeon {
     fn generate(&mut self) {
         let mut level = Level::new(self.xsize, self.ysize, 1, None);
         level.generate();
-        let mut next_entrance = level.get_exit();
+        let mut next_entrance = level.exit();
         self.levels.push(level);
 
         for d in 1..self.depth {
             level = Level::new(self.xsize, self.ysize, d + 1, Some(next_entrance));
             level.generate();
-            next_entrance = level.get_exit();
+            next_entrance = level.exit();
             self.levels.push(level);
         }
     }
@@ -312,18 +312,18 @@ impl Level {
         Ok(grid)
     }
 
-    pub fn get_start_point(&self) -> Point {
+    pub fn start_point(&self) -> Point {
         if !self.rooms.is_empty() {
             return self.rooms[0].center;
         }
         (0, 0)
     }
 
-    // pub fn get_entrance(&self) -> Point {
+    // pub fn entrance(&self) -> Point {
     //     self.entrance
     // }
 
-    pub fn get_exit(&self) -> Point {
+    pub fn exit(&self) -> Point {
         self.exit
     }
 

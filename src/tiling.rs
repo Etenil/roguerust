@@ -39,7 +39,7 @@ impl TileGrid {
         &self.grid
     }
 
-    pub fn get_block_at(&self, x: usize, y: usize) -> &TileType {
+    pub fn block_at(&self, x: usize, y: usize) -> &TileType {
         &self.grid[y + 1][x]
     }
 }

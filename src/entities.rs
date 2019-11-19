@@ -9,11 +9,11 @@ pub trait Entity {
     /// Initial placement of the entity
     fn place(&mut self, location: Point);
     /// Get the tiletype for the entity
-    fn get_tiletype(&self) -> &TileType;
+    fn tiletype(&self) -> &TileType;
     /// Get the entity's current location
-    fn get_location(&self) -> &Point;
+    fn location(&self) -> &Point;
     /// Get the entity's previous location (before it moved)
-    fn get_previous_location(&self) -> &Point;
+    fn previous_location(&self) -> &Point;
     /// Move the entity to another point
     fn move_to(&mut self, location: Point);
     /// Move the entity with a movement differential
@@ -71,15 +71,15 @@ impl Entity for Character {
         )
     }
 
-    fn get_tiletype(&self) -> &TileType {
+    fn tiletype(&self) -> &TileType {
         &self.tile_type
     }
 
-    fn get_location(&self) -> &Point {
+    fn location(&self) -> &Point {
         &self.location
     }
 
-    fn get_previous_location(&self) -> &Point {
+    fn previous_location(&self) -> &Point {
         &self.previous_location
     }
 
@@ -184,7 +184,14 @@ impl Player for Character {
     fn stats(&self) -> String {
         format!(
             "{}({}) - hp: {}/{} attack: {} dodge: {} luck: {} experience: {}",
-            self.name, self.class, self.health, self.max_health, self.attack, self.dodge, self.luck, self.xp
+            self.name,
+            self.class,
+            self.health,
+            self.max_health,
+            self.attack,
+            self.dodge,
+            self.luck,
+            self.xp
         )
     }
 }
