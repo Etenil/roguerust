@@ -221,8 +221,8 @@ pub struct Level {
 }
 
 pub struct Dungeon {
-    pub xsize: usize,
-    pub ysize: usize,
+    xsize: usize,
+    ysize: usize,
     depth: usize,
     pub levels: Vec<Level>,
 }
@@ -252,6 +252,10 @@ impl Dungeon {
             depth,
             levels: vec![],
         }
+    }
+
+    pub fn get_ysize(&self) -> usize {
+        self.ysize
     }
 }
 

@@ -2,7 +2,7 @@ use crossterm::cursor::MoveTo;
 use crossterm::{queue, Output};
 use std::io::{stdout, Write};
 
-use crate::entities::{Character, Player, Entity};
+use crate::entities::{Character, Entity, Player};
 use crate::tiling::{tile_to_str, TileGrid};
 use crate::world::{Dungeon, Generatable, Level};
 
@@ -82,7 +82,7 @@ impl State {
         let mut sout = stdout();
         queue!(
             sout,
-            MoveTo(0, (self.dungeon.ysize + 1) as u16),
+            MoveTo(0, (self.dungeon.get_ysize() + 1) as u16),
             Output(self.player.stats())
         )
         .unwrap();
