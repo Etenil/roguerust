@@ -3,8 +3,8 @@ use crossterm::{queue, Output};
 use std::io::{stdout, Write};
 
 use crate::entities::{Character, Entity, Player};
-use crate::tiling::{tile_to_str, TileGrid};
-use crate::world::{Dungeon, Generatable, Level};
+use crate::tiling::{tile_to_str, TileGrid, TileType};
+use crate::world::{apply_movement, Dungeon, Generatable, Level, Movement};
 
 pub struct State {
     pub player: Character,
@@ -88,5 +88,28 @@ impl State {
 
     pub fn current_level(&self) -> &Level {
         &self.dungeon.levels[self.level]
+    }
+
+    fn can_step_on(tile: &TileType) -> bool {
+        match tile {
+            TileType::Floor => true,
+            TileType::StairsDown => true,
+            TileType::StairsUp => true,
+            _ => false,
+        }
+    }
+
+    pub fn move_player(&mut self, dir: Movement) -> Result<(), String> {
+        match &self.grid {
+            None => Err(String::from("No level loaded!")),
+            Some(grid) => {
+                let loc = apply_movement(*self.player.location(), dir)?;
+                // Is the new location colliding with anything?
+                if !State::can_step_on(grid.block_at(loc.0, loc.1)) {
+                    return Err(String::from("Can't move entity!"));
+                }
+                self.player.move_by(dir)
+            }
+        }
     }
 }

@@ -1,4 +1,5 @@
 extern crate crossterm;
+extern crate ignore_result;
 extern crate rand;
 extern crate text_io;
 
@@ -12,7 +13,8 @@ use crossterm::input::{input, InputEvent, KeyEvent};
 use crossterm::screen::{EnterAlternateScreen, LeaveAlternateScreen, RawScreen};
 use crossterm::terminal;
 use crossterm::{execute, Output};
-use entities::{Entity, Player};
+use entities::Player;
+use ignore_result::Ignore;
 use state::State;
 use std::env;
 use std::io::{stdout, Write};
@@ -59,15 +61,15 @@ fn main() {
                 InputEvent::Keyboard(KeyEvent::Char('?')) => {
                     execute!(stdout(), Output("q: quit")).unwrap()
                 }
-                InputEvent::Keyboard(KeyEvent::Char('j')) => state.player.move_by(DOWN).unwrap(),
-                InputEvent::Keyboard(KeyEvent::Char('k')) => state.player.move_by(UP).unwrap(),
-                InputEvent::Keyboard(KeyEvent::Char('h')) => state.player.move_by(LEFT).unwrap(),
-                InputEvent::Keyboard(KeyEvent::Char('l')) => state.player.move_by(RIGHT).unwrap(),
+                InputEvent::Keyboard(KeyEvent::Char('j')) => state.move_player(DOWN).ignore(),
+                InputEvent::Keyboard(KeyEvent::Char('k')) => state.move_player(UP).ignore(),
+                InputEvent::Keyboard(KeyEvent::Char('h')) => state.move_player(LEFT).ignore(),
+                InputEvent::Keyboard(KeyEvent::Char('l')) => state.move_player(RIGHT).ignore(),
                 // Arrow keys for noobs
-                InputEvent::Keyboard(KeyEvent::Down) => state.player.move_by(DOWN).unwrap(),
-                InputEvent::Keyboard(KeyEvent::Up) => state.player.move_by(UP).unwrap(),
-                InputEvent::Keyboard(KeyEvent::Left) => state.player.move_by(LEFT).unwrap(),
-                InputEvent::Keyboard(KeyEvent::Right) => state.player.move_by(RIGHT).unwrap(),
+                InputEvent::Keyboard(KeyEvent::Down) => state.move_player(DOWN).ignore(),
+                InputEvent::Keyboard(KeyEvent::Up) => state.move_player(UP).ignore(),
+                InputEvent::Keyboard(KeyEvent::Left) => state.move_player(LEFT).ignore(),
+                InputEvent::Keyboard(KeyEvent::Right) => state.move_player(RIGHT).ignore(),
                 _ => (),
             }
         }
