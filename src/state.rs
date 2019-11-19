@@ -1,10 +1,30 @@
 use crossterm::cursor::MoveTo;
-use crossterm::{queue, Output};
-use std::io::{stdout, Write};
+use crossterm::{
+    queue,
+    Output
+};
+use std::io::{
+    stdout,
+    Write
+};
 
-use crate::entities::{Character, Entity, Player};
-use crate::tiling::{tile_to_str, TileGrid, TileType};
-use crate::world::{apply_movement, Dungeon, Generatable, Level, Movement};
+use crate::entities::{
+    Character,
+    Entity,
+    Player
+};
+use crate::tiling::{
+    tile_to_str,
+    TileGrid,
+    TileType
+};
+use crate::world::{
+    apply_movement,
+    Dungeon,
+    Generatable,
+    Level,
+    Movement
+};
 
 pub struct State {
     pub player: Character,
@@ -75,14 +95,32 @@ impl State {
         self.render_entity(&self.player)
     }
 
+    fn ui_state_position(&self) -> MoveTo {
+        MoveTo(0, (self.dungeon.ysize()) as u16)
+    }
+
+    fn ui_notification_position(&self) -> MoveTo {
+        MoveTo(0, (self.dungeon.ysize() + 1) as u16)
+    }
+
     pub fn render_ui(&self) {
         let mut sout = stdout();
         queue!(
             sout,
-            MoveTo(0, (self.dungeon.ysize() + 1) as u16),
+            self.ui_state_position(),
             Output(self.player.stats())
         )
         .unwrap();
+        sout.flush().unwrap();
+    }
+
+    pub fn ui_help(&self) {
+        let mut sout = stdout();
+        queue!(
+            sout,
+            self.ui_notification_position(),
+            Output("quit: q, movement{up(k), down(j), left(h), right(l)}")
+        ).unwrap();
         sout.flush().unwrap();
     }
 

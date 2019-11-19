@@ -9,16 +9,33 @@ mod tiling;
 mod world;
 
 use crossterm::cursor;
-use crossterm::input::{input, InputEvent, KeyEvent};
-use crossterm::screen::{EnterAlternateScreen, LeaveAlternateScreen, RawScreen};
+use crossterm::input::{
+    input,
+    InputEvent,
+    KeyEvent
+};
+use crossterm::screen::{
+    EnterAlternateScreen,
+    LeaveAlternateScreen,
+    RawScreen
+};
 use crossterm::terminal;
-use crossterm::{execute, Output};
+use crossterm::execute;
 use entities::Player;
 use ignore_result::Ignore;
 use state::State;
 use std::env;
-use std::io::{stdout, Write};
-use world::{Dungeon, DOWN, LEFT, RIGHT, UP};
+use std::io::{
+    stdout,
+    Write
+};
+use world::{
+    Dungeon,
+    DOWN,
+    LEFT,
+    RIGHT, 
+    UP
+};
 
 fn player_name() -> String {
     match env::var_os("USER") {
@@ -59,7 +76,7 @@ fn main() {
             match event {
                 InputEvent::Keyboard(KeyEvent::Char('q')) => break,
                 InputEvent::Keyboard(KeyEvent::Char('?')) => {
-                    execute!(stdout(), Output("q: quit")).unwrap()
+                    state.ui_help();
                 }
                 InputEvent::Keyboard(KeyEvent::Char('j')) => state.move_player(DOWN).ignore(),
                 InputEvent::Keyboard(KeyEvent::Char('k')) => state.move_player(UP).ignore(),
