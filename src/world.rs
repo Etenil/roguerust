@@ -145,7 +145,7 @@ impl Corridor {
             }
         };
 
-        Ok(Corridor::new(origin, length.round() as usize, dir))
+        Ok(Corridor::new(origin, length.ceil() as usize, dir))
     }
 
     pub fn link(start: Point, end: Point) -> Result<Vec<Corridor>, String> {
@@ -492,6 +492,63 @@ mod tests {
         ];
         let exp_vert = vec![
             Corridor::new((0, 0), 5, CorridorType::Vertical),
+            Corridor::new((0, 5), 5, CorridorType::Horizontal),
+        ];
+
+        match cor[0].direction {
+            CorridorType::Horizontal => assert_eq!(cor, exp_horz),
+            CorridorType::Vertical => assert_eq!(cor, exp_vert),
+        };
+    }
+
+    #[test]
+    fn test_link_corridors_returns_a_vec_of_corridors_on_reversed_diagonal_points() {
+        let cor = Corridor::link((5, 5), (0, 0)).unwrap();
+
+        let exp_horz = vec![
+            Corridor::new((0, 5), 5, CorridorType::Horizontal),
+            Corridor::new((0, 0), 5, CorridorType::Vertical),
+        ];
+        let exp_vert = vec![
+            Corridor::new((5, 0), 5, CorridorType::Vertical),
+            Corridor::new((0, 0), 5, CorridorType::Horizontal),
+        ];
+
+        match cor[0].direction {
+            CorridorType::Horizontal => assert_eq!(cor, exp_horz),
+            CorridorType::Vertical => assert_eq!(cor, exp_vert),
+        };
+    }
+
+    #[test]
+    fn test_link_corridors_returns_a_vec_of_corridors_on_reversed_vertical_points() {
+        let cor = Corridor::link((0, 5), (5, 0)).unwrap();
+
+        let exp_horz = vec![
+            Corridor::new((0, 5), 5, CorridorType::Horizontal),
+            Corridor::new((5, 0), 5, CorridorType::Vertical),
+        ];
+        let exp_vert = vec![
+            Corridor::new((0, 0), 5, CorridorType::Vertical),
+            Corridor::new((0, 0), 5, CorridorType::Horizontal),
+        ];
+
+        match cor[0].direction {
+            CorridorType::Horizontal => assert_eq!(cor, exp_horz),
+            CorridorType::Vertical => assert_eq!(cor, exp_vert),
+        };
+    }
+
+    #[test]
+    fn test_link_corridors_returns_a_vec_of_corridors_on_reversed_horizontal_points() {
+        let cor = Corridor::link((5, 0), (0, 5)).unwrap();
+
+        let exp_horz = vec![
+            Corridor::new((0, 0), 5, CorridorType::Horizontal),
+            Corridor::new((0, 0), 5, CorridorType::Vertical),
+        ];
+        let exp_vert = vec![
+            Corridor::new((5, 0), 5, CorridorType::Vertical),
             Corridor::new((0, 5), 5, CorridorType::Horizontal),
         ];
 
