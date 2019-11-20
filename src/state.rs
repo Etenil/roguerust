@@ -3,7 +3,7 @@ use crossterm::{queue, Output};
 use std::io::{stdout, Write};
 
 use crate::entities::{Character, Entity, Player};
-use crate::tiling::{tile_to_str, TileGrid, TileType};
+use crate::tiling::{tile_to_str, Tile, TileGrid, TileType};
 use crate::world::{apply_movement, Dungeon, Generatable, Level, Movement};
 
 pub struct State {
@@ -59,7 +59,7 @@ impl State {
             MoveTo(dirt.0 as u16, dirt.1 as u16),
             Output(tile_to_str(background)),
             MoveTo(entity.location().0 as u16, entity.location().1 as u16),
-            Output(tile_to_str(entity.tiletype()))
+            Output(tile_to_str(entity.tile()))
         )
         .unwrap();
         sout.flush().unwrap();
@@ -112,8 +112,8 @@ impl State {
         &self.dungeon.levels[self.level]
     }
 
-    fn can_step_on(tile: &TileType) -> bool {
-        match tile {
+    fn can_step_on(tile: &Tile) -> bool {
+        match tile.get_type() {
             TileType::Floor => true,
             TileType::StairsDown => true,
             TileType::StairsUp => true,
@@ -146,7 +146,7 @@ impl State {
         }
 
         let loc = self.player.location();
-        match grid.block_at(loc.0, loc.1) {
+        match grid.block_at(loc.0, loc.1).get_type() {
             TileType::StairsDown => {
                 self.switch_level(self.level + 1);
                 self.render_level();
@@ -167,7 +167,7 @@ impl State {
         }
 
         let loc = self.player.location();
-        match grid.block_at(loc.0, loc.1) {
+        match grid.block_at(loc.0, loc.1).get_type() {
             TileType::StairsUp => {
                 self.switch_level(self.level - 1);
                 self.render_level();

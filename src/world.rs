@@ -1,5 +1,5 @@
 use crate::entities::{Character, Enemy, Entity};
-use crate::tiling::{TileGrid, TileType, Tileable};
+use crate::tiling::{Tile, TileGrid, TileType, Tileable};
 use rand::Rng;
 use std::cmp::{min, PartialEq};
 use std::fmt;
@@ -56,19 +56,19 @@ impl Tileable for Room {
 
         // Set the walls
         for x in self.start.0..=endx {
-            grid.set_empty_tile(x, self.start.1, TileType::Wall);
-            grid.set_empty_tile(x, endy, TileType::Wall);
+            grid.set_empty_tile(x, self.start.1, Tile::from(TileType::Wall));
+            grid.set_empty_tile(x, endy, Tile::from(TileType::Wall));
         }
 
         for y in self.start.1..endy {
-            grid.set_empty_tile(self.start.0, y, TileType::Wall);
-            grid.set_empty_tile(endx, y, TileType::Wall);
+            grid.set_empty_tile(self.start.0, y, Tile::from(TileType::Wall));
+            grid.set_empty_tile(endx, y, Tile::from(TileType::Wall));
         }
 
         // Fill the room
         for x in (self.start.0 + 1)..endx {
             for y in (self.start.1 + 1)..endy {
-                grid.set_tile(x, y, TileType::Floor);
+                grid.set_tile(x, y, Tile::from(TileType::Floor));
             }
         }
 
@@ -167,34 +167,34 @@ impl Corridor {
         let x = self.start.0;
         let endy = self.start.1 + self.length;
         for y in self.start.1..endy {
-            grid.set_empty_tile(x - 1, y, TileType::Wall);
-            grid.set_tile(x, y, TileType::Floor);
-            grid.set_empty_tile(x + 1, y, TileType::Wall);
+            grid.set_empty_tile(x - 1, y, Tile::from(TileType::Wall));
+            grid.set_tile(x, y, Tile::from(TileType::Floor));
+            grid.set_empty_tile(x + 1, y, Tile::from(TileType::Wall));
         }
         // Wall ends
-        grid.set_empty_tile(x - 1, self.start.1, TileType::Wall);
-        grid.set_empty_tile(x, self.start.1, TileType::Wall);
-        grid.set_empty_tile(x + 1, self.start.1, TileType::Wall);
-        grid.set_empty_tile(x - 1, endy, TileType::Wall);
-        grid.set_empty_tile(x, endy, TileType::Wall);
-        grid.set_empty_tile(x + 1, endy, TileType::Wall);
+        grid.set_empty_tile(x - 1, self.start.1, Tile::from(TileType::Wall));
+        grid.set_empty_tile(x, self.start.1, Tile::from(TileType::Wall));
+        grid.set_empty_tile(x + 1, self.start.1, Tile::from(TileType::Wall));
+        grid.set_empty_tile(x - 1, endy, Tile::from(TileType::Wall));
+        grid.set_empty_tile(x, endy, Tile::from(TileType::Wall));
+        grid.set_empty_tile(x + 1, endy, Tile::from(TileType::Wall));
     }
 
     fn tile_horizontal(&self, grid: &mut TileGrid) {
         let y = self.start.1;
         let endx = self.start.0 + self.length;
         for x in self.start.0..endx {
-            grid.set_empty_tile(x, y - 1, TileType::Wall);
-            grid.set_tile(x, y, TileType::Floor);
-            grid.set_empty_tile(x, y + 1, TileType::Wall);
+            grid.set_empty_tile(x, y - 1, Tile::from(TileType::Wall));
+            grid.set_tile(x, y, Tile::from(TileType::Floor));
+            grid.set_empty_tile(x, y + 1, Tile::from(TileType::Wall));
         }
         // Wall ends
-        grid.set_empty_tile(self.start.0, y - 1, TileType::Wall);
-        grid.set_empty_tile(self.start.0, y, TileType::Wall);
-        grid.set_empty_tile(self.start.0, y + 1, TileType::Wall);
-        grid.set_empty_tile(endx, y - 1, TileType::Wall);
-        grid.set_empty_tile(endx, y, TileType::Wall);
-        grid.set_empty_tile(endx, y + 1, TileType::Wall);
+        grid.set_empty_tile(self.start.0, y - 1, Tile::from(TileType::Wall));
+        grid.set_empty_tile(self.start.0, y, Tile::from(TileType::Wall));
+        grid.set_empty_tile(self.start.0, y + 1, Tile::from(TileType::Wall));
+        grid.set_empty_tile(endx, y - 1, Tile::from(TileType::Wall));
+        grid.set_empty_tile(endx, y, Tile::from(TileType::Wall));
+        grid.set_empty_tile(endx, y + 1, Tile::from(TileType::Wall));
     }
 }
 
@@ -314,8 +314,8 @@ impl Level {
             corridor.tile(&mut grid)?;
         }
 
-        grid.set_tile(self.entrance.0, self.entrance.1, TileType::StairsUp);
-        grid.set_tile(self.exit.0, self.exit.1, TileType::StairsDown);
+        grid.set_tile(self.entrance.0, self.entrance.1, Tile::from(TileType::StairsUp));
+        grid.set_tile(self.exit.0, self.exit.1, Tile::from(TileType::StairsDown));
 
         Ok(grid)
     }
@@ -430,17 +430,20 @@ impl Generatable for Level {
             let room = &self.rooms[rng.gen_range(0, self.rooms.len() - 1)];
 
             // Create the enemy
-            self.entities.push(Box::<Character>::new(Enemy::new(
-                String::from("snake"),
-                2 * self.depth as i32,
-                (2.0 * self.depth as f32 * 0.6).round() as i32,
-                (20.0 * self.depth as f32 * 0.2).max(80.0).round() as i32,
-                0,
-                (
-                    room.start.0 + rng.gen_range(0, room.width),
-                    room.start.1 + rng.gen_range(0, room.height),
-                ),
-            )));
+            self.entities.push(Box::<Character>::new(
+                Enemy::new(
+                    String::from("snake"),
+                    2 * self.depth as i32,
+                    (2.0 * self.depth as f32 * 0.6).round() as i32,
+                    (20.0 * self.depth as f32 * 0.2).max(80.0).round() as i32,
+                    0,
+                    (
+                        room.start.0 + rng.gen_range(0, room.width),
+                        room.start.1 + rng.gen_range(0, room.height),
+                    ),
+                    "s",
+                )
+            ));
         }
     }
 }

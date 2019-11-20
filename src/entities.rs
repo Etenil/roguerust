@@ -1,6 +1,6 @@
 use std::cmp;
 
-use crate::tiling::TileType;
+use crate::tiling::{Tile, TileType};
 use crate::world::{apply_movement, Movement, Point};
 
 pub trait Entity {
@@ -9,7 +9,7 @@ pub trait Entity {
     /// Initial placement of the entity
     fn place(&mut self, location: Point);
     /// Get the tiletype for the entity
-    fn tiletype(&self) -> &TileType;
+    fn tile(&self) -> &Tile;
     /// Get the entity's current location
     fn location(&self) -> &Point;
     /// Get the entity's previous location (before it moved)
@@ -38,14 +38,15 @@ pub struct Character {
     dodge: i32,
     luck: i32,
     xp: i32,
-    tile_type: TileType,
+    tile: Tile,
 }
 
 pub trait Enemy {
-    fn new(class: String, health: i32, attack: i32, dodge: i32, luck: i32, location: Point)
+    fn new(class: String, health: i32, attack: i32, dodge: i32, luck: i32,
+           location: Point, tile_str: &'static str)
         -> Self;
 
-    fn set_tile_type(&mut self, tile_type: TileType);
+    fn set_tile(&mut self, tile: Tile);
 }
 
 pub trait Player {
@@ -71,8 +72,8 @@ impl Entity for Character {
         )
     }
 
-    fn tiletype(&self) -> &TileType {
-        &self.tile_type
+    fn tile(&self) -> &Tile {
+        &self.tile
     }
 
     fn location(&self) -> &Point {
@@ -112,6 +113,7 @@ impl Enemy for Character {
         dodge: i32,
         luck: i32,
         location: Point,
+        tile_str: &'static str,
     ) -> Character {
         Character {
             name: class.clone(),
@@ -125,13 +127,13 @@ impl Enemy for Character {
             xp: 0,
             location,
             previous_location: location,
-            tile_type: TileType::Character,
+            tile: Tile::from(TileType::Character(tile_str)),
             dirty: false,
         }
     }
 
-    fn set_tile_type(&mut self, tile_type: TileType) {
-        self.tile_type = tile_type
+    fn set_tile(&mut self, tile: Tile) {
+        self.tile = tile
     }
 }
 
@@ -156,7 +158,10 @@ impl Player for Character {
             level: 0,
             location: (0, 0),
             previous_location: (0, 0),
-            tile_type: TileType::Player,
+            tile: Tile::new(
+                TileType::Player,
+                true,                 // player is visible by default
+            ),
             dirty: false,
         }
     }
