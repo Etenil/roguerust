@@ -1,30 +1,10 @@
 use crossterm::cursor::MoveTo;
-use crossterm::{
-    queue,
-    Output
-};
-use std::io::{
-    stdout,
-    Write
-};
+use crossterm::{queue, Output};
+use std::io::{stdout, Write};
 
-use crate::entities::{
-    Character,
-    Entity,
-    Player
-};
-use crate::tiling::{
-    tile_to_str,
-    TileGrid,
-    TileType
-};
-use crate::world::{
-    apply_movement,
-    Dungeon,
-    Generatable,
-    Level,
-    Movement
-};
+use crate::entities::{Character, Entity, Player};
+use crate::tiling::{tile_to_str, TileGrid, TileType};
+use crate::world::{apply_movement, Dungeon, Generatable, Level, Movement};
 
 pub struct State {
     pub player: Character,
@@ -105,23 +85,27 @@ impl State {
 
     pub fn render_ui(&self) {
         let mut sout = stdout();
+        queue!(sout, self.ui_state_position(), Output(self.player.stats())).unwrap();
+        sout.flush().unwrap();
+    }
+
+    pub fn notify(&self, message: String) {
+        let mut sout = stdout();
         queue!(
             sout,
-            self.ui_state_position(),
-            Output(self.player.stats())
+            self.ui_notification_position(),
+            Output(" ".repeat(self.dungeon.xsize())),
+            self.ui_notification_position(),
+            Output(message)
         )
         .unwrap();
         sout.flush().unwrap();
     }
 
     pub fn ui_help(&self) {
-        let mut sout = stdout();
-        queue!(
-            sout,
-            self.ui_notification_position(),
-            Output("quit: q, movement{up(k), down(j), left(h), right(l)}")
-        ).unwrap();
-        sout.flush().unwrap();
+        self.notify(String::from(
+            "quit: q, movement{up(k), down(j), left(h), right(l)}",
+        ))
     }
 
     pub fn current_level(&self) -> &Level {
@@ -138,16 +122,58 @@ impl State {
     }
 
     pub fn move_player(&mut self, dir: Movement) -> Result<(), String> {
-        match &self.grid {
-            None => Err(String::from("No level loaded!")),
-            Some(grid) => {
-                let loc = apply_movement(*self.player.location(), dir)?;
-                // Is the new location colliding with anything?
-                if !State::can_step_on(grid.block_at(loc.0, loc.1)) {
-                    return Err(String::from("Can't move entity!"));
-                }
-                self.player.move_by(dir)
+        let grid = match &self.grid {
+            Some(g) => g,
+            None => return Err(String::from("No level loaded!")),
+        };
+
+        let loc = apply_movement(*self.player.location(), dir)?;
+        // Is the new location colliding with anything?
+        if !State::can_step_on(grid.block_at(loc.0, loc.1)) {
+            return Err(String::from("Can't move entity!"));
+        }
+        self.player.move_by(dir)
+    }
+
+    pub fn down_stairs(&mut self) -> Result<(), String> {
+        let grid = match &self.grid {
+            Some(g) => g,
+            None => return Err(String::from("No level loaded!")),
+        };
+
+        if self.level == self.dungeon.depth() - 1 {
+            return Err(String::from("Already at the bottom level"));
+        }
+
+        let loc = self.player.location();
+        match grid.block_at(loc.0, loc.1) {
+            TileType::StairsDown => {
+                self.switch_level(self.level + 1);
+                self.render_level();
+                Ok(())
             }
+            _ => Err(String::from("Not on stairs!")),
+        }
+    }
+
+    pub fn up_stairs(&mut self) -> Result<(), String> {
+        let grid = match &self.grid {
+            Some(g) => g,
+            None => return Err(String::from("No level loaded!")),
+        };
+
+        if self.level == 0 {
+            return Err(String::from("Already at the top level"));
+        }
+
+        let loc = self.player.location();
+        match grid.block_at(loc.0, loc.1) {
+            TileType::StairsUp => {
+                self.switch_level(self.level - 1);
+                self.render_level();
+                Ok(())
+            }
+            _ => Err(String::from("Not on stairs!")),
         }
     }
 }

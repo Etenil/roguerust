@@ -254,8 +254,16 @@ impl Dungeon {
         }
     }
 
+    pub fn xsize(&self) -> usize {
+        self.xsize
+    }
+
     pub fn ysize(&self) -> usize {
         self.ysize
+    }
+
+    pub fn depth(&self) -> usize {
+        self.depth
     }
 }
 

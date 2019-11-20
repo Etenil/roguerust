@@ -9,33 +9,16 @@ mod tiling;
 mod world;
 
 use crossterm::cursor;
-use crossterm::input::{
-    input,
-    InputEvent,
-    KeyEvent
-};
-use crossterm::screen::{
-    EnterAlternateScreen,
-    LeaveAlternateScreen,
-    RawScreen
-};
-use crossterm::terminal;
 use crossterm::execute;
+use crossterm::input::{input, InputEvent, KeyEvent};
+use crossterm::screen::{EnterAlternateScreen, LeaveAlternateScreen, RawScreen};
+use crossterm::terminal;
 use entities::Player;
 use ignore_result::Ignore;
 use state::State;
 use std::env;
-use std::io::{
-    stdout,
-    Write
-};
-use world::{
-    Dungeon,
-    DOWN,
-    LEFT,
-    RIGHT, 
-    UP
-};
+use std::io::{stdout, Write};
+use world::{Dungeon, DOWN, LEFT, RIGHT, UP};
 
 fn player_name() -> String {
     match env::var_os("USER") {
@@ -87,6 +70,16 @@ fn main() {
                 InputEvent::Keyboard(KeyEvent::Up) => state.move_player(UP).ignore(),
                 InputEvent::Keyboard(KeyEvent::Left) => state.move_player(LEFT).ignore(),
                 InputEvent::Keyboard(KeyEvent::Right) => state.move_player(RIGHT).ignore(),
+
+                // Stairs
+                InputEvent::Keyboard(KeyEvent::Char('>')) => match state.down_stairs() {
+                    Ok(()) => (),
+                    Err(info) => state.notify(info),
+                },
+                InputEvent::Keyboard(KeyEvent::Char('<')) => match state.up_stairs() {
+                    Ok(()) => (),
+                    Err(info) => state.notify(info),
+                },
                 _ => (),
             }
         }
