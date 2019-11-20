@@ -50,9 +50,12 @@ impl Room {
 
 impl Tileable for Room {
     fn tile(&self, grid: &mut TileGrid) -> Result<(), String> {
-        // TODO: Detect if the room would leave the grid.
         let endx = self.start.0 + self.width;
         let endy = self.start.1 + self.height;
+
+        if endx >= grid.xsize() || endy > grid.ysize() {
+            return Err(String::from("Room outside of grid bounds"));
+        }
 
         // Set the walls
         for x in self.start.0..=endx {

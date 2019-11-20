@@ -1,11 +1,15 @@
 pub struct TileGrid {
     grid: Vec<Vec<TileType>>,
+    xsize: usize,
+    ysize: usize,
 }
 
 impl TileGrid {
     pub fn new(xsize: usize, ysize: usize) -> TileGrid {
         let mut grid = TileGrid {
             grid: Vec::with_capacity(ysize),
+            xsize,
+            ysize,
         };
 
         for _ in 0..ysize {
@@ -41,6 +45,14 @@ impl TileGrid {
 
     pub fn block_at(&self, x: usize, y: usize) -> &TileType {
         &self.grid[y + 1][x]
+    }
+
+    pub fn xsize(&self) -> usize {
+        self.xsize
+    }
+
+    pub fn ysize(&self) -> usize {
+        self.ysize
     }
 }
 
