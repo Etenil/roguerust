@@ -25,15 +25,23 @@ impl Tile {
     pub fn get_type(&self) -> &TileType {
         &self.tile_type
     }
+
+    pub fn is_visible(&self) -> bool {
+        self.visible
+    }
+
+    pub fn visibility(&mut self, visible: bool) {
+        self.visible = visible;
+    }
 }
 
 impl From<TileType> for Tile {
     fn from(tile_type: TileType) -> Self {
         Tile {
             tile_type,
-            visible: true, // <--- TODO: this set the default beaviour
-                           //            - true: all tiles of world and entities will be drawn
-                           //            - false: only draw tiles visible for the player
+            visible: false, // <--- TODO: this set the default beaviour
+                            //            - true: all tiles of world and entities will be drawn
+                            //            - false: only draw tiles visible for the player
         }
     }
 }
@@ -94,10 +102,18 @@ impl TileGrid {
     pub fn ysize(&self) -> usize {
         self.ysize
     }
+
+    pub fn clear_fog_of_war(&mut self, center: &(usize, usize), radius: usize) {
+        for x in 0.max(center.0 - radius)..center.0 + radius {
+            for y in 0.max(center.1 - radius)..center.1 + radius {
+                self.grid[y][x].visibility(true)
+            }
+        }
+    }
 }
 
 pub fn tile_to_str(tile: &Tile) -> &str {
-    if tile.visible {
+    if tile.is_visible() {
         match tile.tile_type {
             TileType::Floor => ".",
             TileType::Wall => "#",

@@ -22,6 +22,8 @@ pub trait Entity {
     fn is_dirty(&self) -> bool;
     /// Declare the entity clean
     fn clean(&mut self);
+    fn visibility(&mut self, visible: bool);
+    fn is_visible(&self) -> bool;
 }
 
 #[derive(Clone)]
@@ -39,12 +41,19 @@ pub struct Character {
     luck: i32,
     xp: i32,
     tile: Tile,
+    visible: bool,
 }
 
 pub trait Enemy {
-    fn new(class: String, health: i32, attack: i32, dodge: i32, luck: i32,
-           location: Point, tile_str: &'static str)
-        -> Self;
+    fn new(
+        class: String,
+        health: i32,
+        attack: i32,
+        dodge: i32,
+        luck: i32,
+        location: Point,
+        tile_str: &'static str,
+    ) -> Self;
 
     fn set_tile(&mut self, tile: Tile);
 }
@@ -103,6 +112,14 @@ impl Entity for Character {
     fn clean(&mut self) {
         self.dirty = false;
     }
+
+    fn visibility(&mut self, visible: bool) {
+        self.visible = visible;
+    }
+
+    fn is_visible(&self) -> bool {
+        self.visible
+    }
 }
 
 impl Enemy for Character {
@@ -129,6 +146,7 @@ impl Enemy for Character {
             previous_location: location,
             tile: Tile::from(TileType::Character(tile_str)),
             dirty: false,
+            visible: false,
         }
     }
 
@@ -160,9 +178,10 @@ impl Player for Character {
             previous_location: (0, 0),
             tile: Tile::new(
                 TileType::Player,
-                true,                 // player is visible by default
+                true, // player is visible by default
             ),
             dirty: false,
+            visible: true,
         }
     }
 

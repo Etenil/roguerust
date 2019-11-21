@@ -6,6 +6,8 @@ use crate::entities::{Character, Entity, Player};
 use crate::tiling::{tile_to_str, Tile, TileGrid, TileType};
 use crate::world::{apply_movement, Dungeon, Generatable, Level, Movement};
 
+const PLAYER_SIGHT: usize = 5;
+
 pub struct State {
     pub player: Character,
     dungeon: Dungeon,
@@ -48,7 +50,7 @@ impl State {
     }
 
     fn render_entity(&self, entity: &dyn Entity) {
-        if !entity.is_dirty() {
+        if !entity.is_visible() || !entity.is_dirty() {
             return;
         }
         let dirt = entity.previous_location();
@@ -71,8 +73,13 @@ impl State {
         }
     }
 
-    pub fn render_player(&self) {
-        self.render_entity(&self.player)
+    pub fn render_player(&mut self) {
+        self.render_entity(&self.player);
+
+        self.grid
+            .as_mut()
+            .unwrap()
+            .clear_fog_of_war(self.player.location(), PLAYER_SIGHT);
     }
 
     fn ui_state_position(&self) -> MoveTo {

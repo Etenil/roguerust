@@ -42,15 +42,13 @@ fn main() {
 
     let _raw = RawScreen::into_raw_mode();
 
-    state.render_level();
-
     let input = input();
     let mut reader = input.read_sync();
 
     loop {
-        // update
+        state.render_player();
+        state.render_level();
         state.render_entities();
-
         state.render_player();
 
         state.render_ui();
