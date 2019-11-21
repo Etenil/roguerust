@@ -118,16 +118,22 @@ impl Corridor {
             ));
         }
 
-        let length = distance(start, end);
-        if length < 1.0 {
+        let (dir, length) = if start.0 == end.0 {
+            (
+                CorridorType::Vertical,
+                start.1.max(end.1) - start.1.min(end.1),
+            )
+        } else {
+            (
+                CorridorType::Horizontal,
+                start.0.max(end.0) - start.0.min(end.0),
+            )
+        };
+
+        if length == 0 {
             return Err(String::from("Can't create 0-length corridor"));
         }
 
-        let dir = if start.0 == end.0 {
-            CorridorType::Vertical
-        } else {
-            CorridorType::Horizontal
-        };
         let origin = match dir {
             CorridorType::Horizontal => {
                 if start.0 < end.0 {
@@ -145,7 +151,7 @@ impl Corridor {
             }
         };
 
-        Ok(Corridor::new(origin, length.ceil() as usize, dir))
+        Ok(Corridor::new(origin, length, dir))
     }
 
     pub fn link(start: Point, end: Point) -> Result<Vec<Corridor>, String> {
@@ -232,19 +238,6 @@ pub struct Dungeon {
 
 pub trait Generatable {
     fn generate(&mut self);
-}
-
-fn hor_dist(point1: Point, point2: Point) -> f32 {
-    point2.0 as f32 - point1.0 as f32
-}
-
-fn ver_dist(point1: Point, point2: Point) -> f32 {
-    point2.1 as f32 - point1.1 as f32
-}
-
-/// The distance between 2 points
-fn distance(point1: Point, point2: Point) -> f32 {
-    (hor_dist(point1, point2).powf(2.0) + ver_dist(point1, point2).powf(2.0)).sqrt()
 }
 
 impl Dungeon {
