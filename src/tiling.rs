@@ -104,8 +104,10 @@ impl TileGrid {
     }
 
     pub fn clear_fog_of_war(&mut self, center: &(usize, usize), radius: usize) {
-        for x in 0.max(center.0 - radius)..center.0 + radius {
-            for y in 0.max(center.1 - radius)..center.1 + radius {
+        let startx: usize = 0.max(center.0 as isize - radius as isize) as usize;
+        let starty: usize = 0.max(center.1 as isize - radius as isize) as usize;
+        for x in startx..self.xsize.min(center.0 + radius) {
+            for y in starty..self.ysize.min(center.1 + radius) {
                 self.grid[y][x].visibility(true)
             }
         }
