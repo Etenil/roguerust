@@ -1,5 +1,5 @@
 use crossterm::cursor::MoveTo;
-use crossterm::{queue, Output};
+use crossterm::{execute, queue, Output};
 use std::io::{stdout, Write};
 
 use crate::entities::{Character, Entity, Player};
@@ -38,6 +38,7 @@ impl State {
 
     pub fn render_level(&self) {
         let mut sout = stdout();
+        execute!(sout, MoveTo(0, 0)).unwrap();
         for (linenum, line) in self.grid.as_ref().unwrap().raw_data().iter().enumerate() {
             let linestr = line.iter().map(tile_to_str).collect::<Vec<&str>>();
             let mut linestr2 = String::from("");
