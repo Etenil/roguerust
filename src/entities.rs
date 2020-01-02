@@ -41,7 +41,6 @@ pub struct Character {
     luck: i32,
     xp: i32,
     tile: Tile,
-    visible: bool,
 }
 
 pub trait Enemy {
@@ -114,11 +113,14 @@ impl Entity for Character {
     }
 
     fn visibility(&mut self, visible: bool) {
-        self.visible = visible;
+        if visible != self.is_visible() {
+            self.dirty = true;
+        }
+        self.tile.visibility(visible)
     }
 
     fn is_visible(&self) -> bool {
-        self.visible
+        self.tile.is_visible()
     }
 }
 
@@ -146,7 +148,6 @@ impl Enemy for Character {
             previous_location: location,
             tile: Tile::from(TileType::Character(tile_str)),
             dirty: false,
-            visible: false,
         }
     }
 
@@ -182,7 +183,6 @@ impl Player for Character {
                 false,
             ),
             dirty: false,
-            visible: true,
         }
     }
 

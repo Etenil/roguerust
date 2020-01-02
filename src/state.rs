@@ -46,12 +46,37 @@ impl State {
         &self.dungeon.levels[self.level]
     }
 
+    pub fn current_level_mut(&mut self) -> &mut Level {
+        &mut self.dungeon.levels[self.level]
+    }
+
     fn can_step_on(tile: &Tile) -> bool {
         match tile.get_type() {
             TileType::Floor => true,
             TileType::StairsDown => true,
             TileType::StairsUp => true,
             _ => false,
+        }
+    }
+
+    fn clear_los(&mut self) {
+        {
+            let grid = self.grid.as_mut().unwrap();
+            grid.clear_fog_of_war(self.player.location(), PLAYER_SIGHT);
+        }
+
+        for i in 0..self.current_level().entities.len() {
+            let loc = *self.current_level().entities[i].location();
+            if self
+                .grid
+                .as_ref()
+                .unwrap()
+                .block_at(loc.0, loc.1)
+                .is_visible()
+                && !self.current_level().entities[i].is_visible()
+            {
+                self.current_level_mut().entities[i].visibility(true);
+            }
         }
     }
 
