@@ -46,7 +46,6 @@ fn main() {
     let mut reader = input.read_sync();
 
     loop {
-        state.render_player();
         state.render_level();
         state.render_entities();
         state.render_player();

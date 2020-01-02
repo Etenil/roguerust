@@ -310,7 +310,11 @@ impl Level {
             corridor.tile(&mut grid)?;
         }
 
-        grid.set_tile(self.entrance.0, self.entrance.1, Tile::from(TileType::StairsUp));
+        grid.set_tile(
+            self.entrance.0,
+            self.entrance.1,
+            Tile::from(TileType::StairsUp),
+        );
         grid.set_tile(self.exit.0, self.exit.1, Tile::from(TileType::StairsDown));
 
         Ok(grid)
@@ -426,20 +430,19 @@ impl Generatable for Level {
             let room = &self.rooms[rng.gen_range(0, self.rooms.len() - 1)];
 
             // Create the enemy
-            self.entities.push(Box::<Character>::new(
-                Enemy::new(
-                    String::from("snake"),
-                    2 * self.depth as i32,
-                    (2.0 * self.depth as f32 * 0.6).round() as i32,
-                    (20.0 * self.depth as f32 * 0.2).max(80.0).round() as i32,
-                    0,
-                    (
-                        room.start.0 + rng.gen_range(0, room.width),
-                        room.start.1 + rng.gen_range(0, room.height),
-                    ),
-                    "s",
-                )
-            ));
+            let enemy_coords = (
+                room.start.0 + rng.gen_range(0, room.width - 1) + 1,
+                room.start.1 + rng.gen_range(0, room.height - 1) + 1,
+            );
+            self.entities.push(Box::<Character>::new(Enemy::new(
+                String::from("snake"),
+                2 * self.depth as i32,
+                (2.0 * self.depth as f32 * 0.6).round() as i32,
+                (20.0 * self.depth as f32 * 0.2).max(80.0).round() as i32,
+                0,
+                enemy_coords,
+                "s",
+            )));
         }
     }
 }
