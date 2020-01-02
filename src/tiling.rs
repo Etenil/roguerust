@@ -1,3 +1,4 @@
+use log::debug;
 use std::convert::From;
 
 #[derive(Clone)]
@@ -103,6 +104,10 @@ impl TileGrid {
         self.ysize
     }
 
+    fn reveal(&mut self, x: usize, y: usize) {
+        self.grid[y][x].visibility(true);
+    }
+
     /// Clears all blocks in a single line of sight ray; stop when encountering a wall
     /// This uses the bresenham algorithm, see:
     ///     https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
@@ -116,11 +121,15 @@ impl TileGrid {
         let mut x = start.0;
         let mut y = start.1;
 
+        // the tile we're standing on needs to be visible.
+        self.reveal(start.0, start.1);
+
         loop {
             if x == end.0 && y == end.1 {
+                self.reveal(x, y);
                 break;
             }
-            if let TileType::Wall = self.grid[y][x].get_type() {
+            if let TileType::Empty = self.grid[y][x].get_type() {
                 break;
             }
 
@@ -133,7 +142,7 @@ impl TileGrid {
                 err += dx;
                 y = (y as isize + sy).max(0) as usize;
             }
-            self.grid[y][x].visibility(true);
+            self.reveal(x, y);
         }
     }
 
@@ -148,20 +157,26 @@ impl TileGrid {
         let c = (center.0 + radius, center.1 + radius);
         let d = (center.0.saturating_sub(radius), center.1 + radius);
 
+        debug!("LOS: {:?} - {:?} {:?} {:?} {:?}", center, a, b, c, d);
+
         // From a to b
-        for x in a.0..b.0 {
+        for x in a.0..=b.0 {
+            // debug!("Clear LOS from {:?} to {:?}", center, (x, a.1));
             self.clear_los(center, &(x, a.1));
         }
         // From b to c
-        for y in b.1..c.1 {
+        for y in b.1..=c.1 {
+            // debug!("Clear LOS from {:?} to {:?}", center, (b.0, y));
             self.clear_los(center, &(b.0, y));
         }
         // From c to d
-        for x in d.0..c.0 {
+        for x in d.0..=c.0 {
+            // debug!("Clear LOS from {:?} to {:?}", center, (x, c.1));
             self.clear_los(center, &(x, c.1));
         }
         // From d to a
-        for y in a.1..d.1 {
+        for y in a.1..=d.1 {
+            // debug!("Clear LOS from {:?} to {:?}", center, (d.0, y));
             self.clear_los(center, &(d.0, y));
         }
     }

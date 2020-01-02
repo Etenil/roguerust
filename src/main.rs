@@ -1,23 +1,22 @@
-extern crate crossterm;
-extern crate ignore_result;
-extern crate rand;
-extern crate text_io;
-
 mod entities;
 mod state;
 mod tiling;
 mod world;
+
+use std::env;
+use std::fs::File;
+use std::io::{stdout, Write};
 
 use crossterm::cursor;
 use crossterm::execute;
 use crossterm::input::{input, InputEvent, KeyEvent};
 use crossterm::screen::{EnterAlternateScreen, LeaveAlternateScreen, RawScreen};
 use crossterm::terminal;
-use entities::Player;
 use ignore_result::Ignore;
+use simplelog::*;
+
+use entities::Player;
 use state::State;
-use std::env;
-use std::io::{stdout, Write};
 use world::{Dungeon, DOWN, LEFT, RIGHT, UP};
 
 fn player_name() -> String {
@@ -28,23 +27,35 @@ fn player_name() -> String {
 }
 
 fn main() {
-    let term_size = terminal::size().unwrap();
+    // Set up the debug logger only if required.
+    if let Ok(_val) = env::var("DEBUG") {
+        WriteLogger::init(
+            LevelFilter::Debug,
+            Config::default(),
+            File::create("roguerust.log").unwrap(),
+        )
+        .unwrap();
+    }
 
+    // Initialise the terminal, the raw alternate mode allows direct character
+    // seeking and hides the prompt.
+    let term_size = terminal::size().unwrap();
+    execute!(stdout(), EnterAlternateScreen).unwrap();
+    execute!(stdout(), cursor::Hide).unwrap();
+    let _raw = RawScreen::into_raw_mode();
+
+    // Initialise state, create the player and dungeon
     let mut state = State::new(
         Player::new(player_name(), String::from("Warrior"), 30, 10, 10, 20),
         Dungeon::new(term_size.0 as usize, (term_size.1 - 2) as usize, 5),
     );
-
     state.init();
-
-    execute!(stdout(), EnterAlternateScreen).unwrap();
-    execute!(stdout(), cursor::Hide).unwrap();
-
-    let _raw = RawScreen::into_raw_mode();
 
     let input = input();
     let mut reader = input.read_sync();
 
+    // Main loop, dispatches events and calls rendering routines. Don't
+    // add any game logic here.
     loop {
         state.render_player();
         state.render_level();
