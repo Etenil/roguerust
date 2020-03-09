@@ -1,7 +1,7 @@
 use log::debug;
 use std::convert::From;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum TileType {
     Empty,
     Wall,
@@ -12,7 +12,7 @@ pub enum TileType {
     Player,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Tile {
     tile_type: TileType,
     visible: bool,
@@ -64,7 +64,7 @@ impl TileGrid {
         for _ in 0..ysize {
             let mut subvec = Vec::with_capacity(xsize);
             for _ in 0..xsize {
-                subvec.push(Tile::new(TileType::Empty, true));
+                subvec.push(Tile::new(TileType::Empty, false));
             }
             grid.grid.push(subvec);
         }
@@ -92,7 +92,12 @@ impl TileGrid {
         &self.grid
     }
 
+    pub fn tile_at(&self, x: usize, y: usize) -> &Tile {
+        &self.grid[y][x]
+    }
+
     pub fn block_at(&self, x: usize, y: usize) -> &Tile {
+        //Needed to integrate with the terminal numbering
         &self.grid[y + 1][x]
     }
 
@@ -125,11 +130,12 @@ impl TileGrid {
         self.reveal(start.0, start.1);
 
         loop {
-            if x == end.0 && y == end.1 {
-                self.reveal(x, y);
+            if let TileType::Empty = self.tile_at(x, y).get_type() {
                 break;
             }
-            if let TileType::Empty = self.grid[y][x].get_type() {
+
+            if x == end.0 && y == end.1 {
+                // self.reveal(x, y);
                 break;
             }
 
@@ -200,4 +206,110 @@ pub fn tile_to_str(tile: &Tile) -> &str {
 
 pub trait Tileable {
     fn tile(&self, grid: &mut TileGrid) -> Result<(), String>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_tilegrid_is_populated_by_empty_invisible_tiles() {
+        const GRID_SIZE: usize = 2;
+        let grid = TileGrid::new(GRID_SIZE, GRID_SIZE);
+        for x in 0..2 {
+            for y in 0..2 {
+                assert!(match grid.tile_at(x, y).tile_type {
+                    TileType::Empty => true,
+                    _ => false,
+                });
+                assert_eq!(grid.tile_at(x, y).is_visible(), false);
+            }
+        }
+    }
+
+    #[test]
+    fn tiles_can_be_revealed() {
+        let mut tile = Tile::new(TileType::Wall, false);
+        assert_eq!(tile.visible, false);
+        assert_eq!(tile.is_visible(), false);
+        tile.visibility(true);
+        assert_eq!(tile.visible, true);
+        assert_eq!(tile.is_visible(), true);
+    }
+
+    #[test]
+    fn tilegrid_can_reveal_tiles() {
+        let mut grid = TileGrid::new(1, 1);
+        grid.reveal(0, 0);
+        assert_eq!(grid.grid[0][0].is_visible(), true);
+        assert_eq!(grid.tile_at(0, 0).is_visible(), true);
+    }
+
+    #[test]
+    fn test_clear_los_clears_to_wall_on_vertical_up() {
+        let mut grid = TileGrid::new(9, 9);
+        grid.set_tile(5, 1, Tile::from(TileType::Wall));
+        grid.set_tile(5, 2, Tile::from(TileType::Floor));
+        grid.set_tile(5, 3, Tile::from(TileType::Floor));
+
+        grid.clear_los(&(5, 3), &(5, 0));
+        assert_eq!(grid.tile_at(5, 4).is_visible(), false);
+        assert_eq!(grid.tile_at(5, 3).is_visible(), true);
+        assert_eq!(grid.tile_at(6, 2).is_visible(), false);
+        assert_eq!(grid.tile_at(5, 2).is_visible(), true);
+        assert_eq!(grid.tile_at(4, 2).is_visible(), false);
+        assert_eq!(grid.tile_at(5, 1).is_visible(), true);
+        assert_eq!(grid.tile_at(5, 0).is_visible(), false);
+    }
+
+    #[test]
+    fn test_clear_los_clears_to_wall_on_vertical_down() {
+        let mut grid = TileGrid::new(9, 9);
+        grid.set_tile(5, 3, Tile::from(TileType::Wall));
+        grid.set_tile(5, 2, Tile::from(TileType::Floor));
+        grid.set_tile(5, 1, Tile::from(TileType::Floor));
+
+        grid.clear_los(&(5, 1), &(5, 4));
+        assert_eq!(grid.tile_at(5, 0).is_visible(), false);
+        assert_eq!(grid.tile_at(4, 1).is_visible(), false);
+        assert_eq!(grid.tile_at(5, 1).is_visible(), true);
+        assert_eq!(grid.tile_at(6, 1).is_visible(), false);
+        assert_eq!(grid.tile_at(5, 2).is_visible(), true);
+        assert_eq!(grid.tile_at(5, 3).is_visible(), true);
+        assert_eq!(grid.tile_at(5, 4).is_visible(), false);
+    }
+
+    #[test]
+    fn test_clear_los_clears_to_wall_on_horizontal_right() {
+        let mut grid = TileGrid::new(9, 9);
+        grid.set_tile(3, 5, Tile::from(TileType::Wall));
+        grid.set_tile(2, 5, Tile::from(TileType::Floor));
+        grid.set_tile(1, 5, Tile::from(TileType::Floor));
+
+        grid.clear_los(&(1, 5), &(4, 5));
+        assert_eq!(grid.tile_at(0, 5).is_visible(), false);
+        assert_eq!(grid.tile_at(1, 5).is_visible(), true);
+        assert_eq!(grid.tile_at(2, 4).is_visible(), false);
+        assert_eq!(grid.tile_at(2, 5).is_visible(), true);
+        assert_eq!(grid.tile_at(2, 6).is_visible(), false);
+        assert_eq!(grid.tile_at(3, 5).is_visible(), true);
+        assert_eq!(grid.tile_at(3, 6).is_visible(), false);
+    }
+
+    #[test]
+    fn test_clear_los_clears_to_wall_on_horizontal_left() {
+        let mut grid = TileGrid::new(9, 9);
+        grid.set_tile(1, 5, Tile::from(TileType::Wall));
+        grid.set_tile(2, 5, Tile::from(TileType::Floor));
+        grid.set_tile(3, 5, Tile::from(TileType::Floor));
+
+        grid.clear_los(&(3, 5), &(0, 5));
+        assert_eq!(grid.tile_at(4, 5).is_visible(), false);
+        assert_eq!(grid.tile_at(3, 5).is_visible(), true);
+        assert_eq!(grid.tile_at(2, 4).is_visible(), false);
+        assert_eq!(grid.tile_at(2, 5).is_visible(), true);
+        assert_eq!(grid.tile_at(2, 6).is_visible(), false);
+        assert_eq!(grid.tile_at(1, 5).is_visible(), true);
+        assert_eq!(grid.tile_at(0, 6).is_visible(), false);
+    }
 }
