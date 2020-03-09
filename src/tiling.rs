@@ -130,10 +130,6 @@ impl TileGrid {
         self.reveal(start.0, start.1);
 
         loop {
-            if let TileType::Empty = self.tile_at(x, y).get_type() {
-                break;
-            }
-
             if x == end.0 && y == end.1 {
                 // self.reveal(x, y);
                 break;
@@ -148,6 +144,11 @@ impl TileGrid {
                 err += dx;
                 y = (y as isize + sy).max(0) as usize;
             }
+
+            if let TileType::Empty = self.tile_at(x, y).get_type() {
+                break;
+            }
+
             self.reveal(x, y);
         }
     }
