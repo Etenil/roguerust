@@ -179,6 +179,7 @@ impl Player for Character {
             tile: Tile::new(
                 TileType::Player,
                 true, // player is visible by default
+                false,
             ),
             dirty: false,
             visible: true,
