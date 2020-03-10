@@ -1,4 +1,4 @@
 - Add unit tests
-- Add walls collision support
-- Add basic entity interactions (staircases etc.)
+- Disassociate level to view, move view around if terminal too small
 - Add equipment system
+- Remove rendering logic from State
