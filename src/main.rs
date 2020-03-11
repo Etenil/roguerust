@@ -1,6 +1,7 @@
 mod entities;
 mod state;
 mod tiling;
+mod viewport;
 mod world;
 
 use std::env;
@@ -17,6 +18,7 @@ use simplelog::*;
 
 use entities::Player;
 use state::State;
+use viewport::{CrossTermViewPort, ViewPort};
 use world::{Dungeon, DOWN, LEFT, RIGHT, UP};
 
 fn player_name() -> String {
@@ -45,10 +47,13 @@ fn main() {
     let _raw = RawScreen::into_raw_mode();
 
     // Initialise state, create the player and dungeon
+    let xsize = term_size.0 as usize;
+    let ysize = (term_size.1 - 2) as usize;
     let mut state = State::new(
         Player::new(player_name(), String::from("Warrior"), 30, 10, 10, 20),
-        Dungeon::new(term_size.0 as usize, (term_size.1 - 2) as usize, 5),
+        Dungeon::new(xsize, ysize, 5),
     );
+    let mut window = CrossTermViewPort::new(xsize, ysize);
     state.init();
 
     let input = input();
@@ -57,18 +62,13 @@ fn main() {
     // Main loop, dispatches events and calls rendering routines. Don't
     // add any game logic here.
     loop {
-        state.render_player();
-        state.render_level();
-        state.render_entities();
-        state.render_player();
-
-        state.render_ui();
+        window.render_state(&state);
 
         if let Some(event) = reader.next() {
             match event {
                 InputEvent::Keyboard(KeyEvent::Char('q')) => break,
                 InputEvent::Keyboard(KeyEvent::Char('?')) => {
-                    state.ui_help();
+                    window.ui_help();
                 }
                 InputEvent::Keyboard(KeyEvent::Char('j')) => state.move_player(DOWN).ignore(),
                 InputEvent::Keyboard(KeyEvent::Char('k')) => state.move_player(UP).ignore(),
@@ -83,11 +83,11 @@ fn main() {
                 // Stairs
                 InputEvent::Keyboard(KeyEvent::Char('>')) => match state.down_stairs() {
                     Ok(()) => (),
-                    Err(info) => state.notify(info),
+                    Err(info) => window.notify(info),
                 },
                 InputEvent::Keyboard(KeyEvent::Char('<')) => match state.up_stairs() {
                     Ok(()) => (),
-                    Err(info) => state.notify(info),
+                    Err(info) => window.notify(info),
                 },
                 _ => (),
             }

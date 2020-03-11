@@ -25,11 +25,21 @@ impl State {
         self.dungeon.generate();
         self.switch_level(0);
         self.player.place(self.current_level().start_point());
+        self.fog_of_war();
+    }
+
+    pub fn get_grid(&self) -> Option<&TileGrid> {
+        self.grid.as_ref()
+    }
+
+    pub fn get_player(&self) -> &Character {
+        &self.player
     }
 
     pub fn switch_level(&mut self, num_level: usize) {
         self.level = num_level;
         self.grid = Some(self.current_level().to_tilegrid().unwrap());
+        self.fog_of_war();
     }
 
     pub fn current_level(&self) -> &Level {
@@ -56,7 +66,9 @@ impl State {
         if !State::can_step_on(grid.block_at(loc.0, loc.1)) {
             return Err(String::from("Can't move entity!"));
         }
-        self.player.move_by(dir)
+        let ret = self.player.move_by(dir);
+        self.fog_of_war();
+        ret
     }
 
     pub fn down_stairs(&mut self) -> Result<(), String> {
@@ -97,5 +109,12 @@ impl State {
             }
             _ => Err(String::from("Not on stairs!")),
         }
+    }
+
+    pub fn fog_of_war(&mut self) {
+        self.grid
+            .as_mut()
+            .unwrap()
+            .clear_fog_of_war(self.player.location(), PLAYER_SIGHT);
     }
 }
