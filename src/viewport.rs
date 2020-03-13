@@ -1,12 +1,17 @@
+use crate::events::ViewportEvent;
+use crate::world::{DOWN, LEFT, RIGHT, UP};
+use crossterm::cursor;
 use crossterm::cursor::MoveTo;
+use crossterm::input::{input, InputEvent, KeyEvent, SyncReader};
+use crossterm::screen::{EnterAlternateScreen, LeaveAlternateScreen, RawScreen};
+use crossterm::terminal;
 use crossterm::{execute, queue, Output};
 use log::debug;
 use std::io::{stdout, Write};
 
-use crate::entities::{Character, Entity, Player};
+use crate::entities::{Entity, Player};
 use crate::state::State;
-use crate::tiling::{tile_to_str, Tile, TileGrid, TileType};
-use crate::world::{apply_movement, Dungeon, Generatable, Level, Movement};
+use crate::tiling::tile_to_str;
 
 pub trait ViewPort {
     fn render_state(&mut self, state: &State);
@@ -15,13 +20,31 @@ pub trait ViewPort {
 pub struct CrossTermViewPort {
     xsize: usize,
     ysize: usize,
-    // Use below when switching to moveable window
-    //start: (usize, usize)
+    reader: SyncReader,
+    start: (usize, usize),
 }
 
 impl CrossTermViewPort {
-    pub fn new(xsize: usize, ysize: usize) -> CrossTermViewPort {
-        CrossTermViewPort { xsize, ysize }
+    pub fn new() -> CrossTermViewPort {
+        // Initialise the terminal, the raw alternate mode allows direct character
+        // seeking and hides the prompt.
+        let term_size = terminal::size().unwrap();
+        execute!(stdout(), EnterAlternateScreen).unwrap();
+        execute!(stdout(), cursor::Hide).unwrap();
+        let _raw = RawScreen::into_raw_mode();
+
+        // Initialise state, create the player and dungeon
+        let xsize = term_size.0 as usize;
+        let ysize = (term_size.1 - 2) as usize;
+
+        let input = input();
+
+        CrossTermViewPort {
+            xsize,
+            ysize,
+            reader: input.read_sync(),
+            start: (0, 0),
+        }
     }
 
     fn draw_level(&self, state: &State) {
@@ -106,6 +129,35 @@ impl CrossTermViewPort {
             "quit: q, movement{up(k), down(j), left(h), right(l)}",
         ))
     }
+
+    pub fn wait_input(&mut self) -> Option<ViewportEvent> {
+        if let Some(event) = self.reader.next() {
+            return match event {
+                InputEvent::Keyboard(KeyEvent::Char('q')) => Some(ViewportEvent::Quit),
+                InputEvent::Keyboard(KeyEvent::Char('?')) => {
+                    self.ui_help();
+                    None
+                }
+                InputEvent::Keyboard(KeyEvent::Char('j')) => Some(ViewportEvent::MovePlayer(DOWN)),
+                InputEvent::Keyboard(KeyEvent::Char('k')) => Some(ViewportEvent::MovePlayer(UP)),
+                InputEvent::Keyboard(KeyEvent::Char('h')) => Some(ViewportEvent::MovePlayer(LEFT)),
+                InputEvent::Keyboard(KeyEvent::Char('l')) => Some(ViewportEvent::MovePlayer(RIGHT)),
+                // Arrow keys for noobs
+                InputEvent::Keyboard(KeyEvent::Down) => Some(ViewportEvent::MovePlayer(DOWN)),
+                InputEvent::Keyboard(KeyEvent::Up) => Some(ViewportEvent::MovePlayer(UP)),
+                InputEvent::Keyboard(KeyEvent::Left) => Some(ViewportEvent::MovePlayer(LEFT)),
+                InputEvent::Keyboard(KeyEvent::Right) => Some(ViewportEvent::MovePlayer(RIGHT)),
+
+                // Stairs
+                InputEvent::Keyboard(KeyEvent::Char('>')) => Some(ViewportEvent::DownStairs),
+                InputEvent::Keyboard(KeyEvent::Char('<')) => Some(ViewportEvent::UpStairs),
+
+                // No match
+                _ => None,
+            };
+        }
+        None
+    }
 }
 
 impl ViewPort for CrossTermViewPort {
@@ -114,5 +166,12 @@ impl ViewPort for CrossTermViewPort {
         self.draw_entities(state);
         self.draw_player(state);
         self.draw_ui(state);
+    }
+}
+
+impl Drop for CrossTermViewPort {
+    fn drop(&mut self) {
+        execute!(stdout(), LeaveAlternateScreen).unwrap();
+        execute!(stdout(), cursor::Show).unwrap();
     }
 }
