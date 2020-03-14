@@ -22,6 +22,7 @@
             "program": "${workspaceRoot}/target/debug/roguelike",
             "args": [],
             "cwd": "${workspaceRoot}",
+            "terminal": "external"
         }
     ]
 }

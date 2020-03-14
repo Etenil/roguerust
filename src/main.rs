@@ -16,8 +16,8 @@ use state::State;
 use viewport::{CrossTermViewPort, ViewPort};
 use world::Dungeon;
 
-const DUNGEON_SIZE_X: usize = 20;
-const DUNGEON_SIZE_Y: usize = 20;
+const DUNGEON_SIZE_X: usize = 80;
+const DUNGEON_SIZE_Y: usize = 24;
 const DUNGEON_DEPTH: usize = 5;
 
 fn player_name() -> String {

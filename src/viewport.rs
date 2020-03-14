@@ -2,7 +2,7 @@ use crate::events::ViewportEvent;
 use crate::world::{DOWN, LEFT, RIGHT, UP};
 use crossterm::cursor;
 use crossterm::cursor::MoveTo;
-use crossterm::input::{input, InputEvent, KeyEvent, SyncReader};
+use crossterm::input::{input, InputEvent, KeyEvent, TerminalInput};
 use crossterm::screen::{EnterAlternateScreen, LeaveAlternateScreen, RawScreen};
 use crossterm::terminal;
 use crossterm::{execute, queue, Output};
@@ -15,12 +15,14 @@ use crate::tiling::tile_to_str;
 
 pub trait ViewPort {
     fn render_state(&mut self, state: &State);
+    fn wait_input(&mut self) -> Option<ViewportEvent>;
 }
 
 pub struct CrossTermViewPort {
     xsize: usize,
     ysize: usize,
-    reader: SyncReader,
+    raw: RawScreen,
+    input: TerminalInput,
     start: (usize, usize),
 }
 
@@ -31,7 +33,7 @@ impl CrossTermViewPort {
         let term_size = terminal::size().unwrap();
         execute!(stdout(), EnterAlternateScreen).unwrap();
         execute!(stdout(), cursor::Hide).unwrap();
-        let _raw = RawScreen::into_raw_mode();
+        let raw = RawScreen::into_raw_mode().unwrap();
 
         // Initialise state, create the player and dungeon
         let xsize = term_size.0 as usize;
@@ -42,7 +44,8 @@ impl CrossTermViewPort {
         CrossTermViewPort {
             xsize,
             ysize,
-            reader: input.read_sync(),
+            raw,
+            input,
             start: (0, 0),
         }
     }
@@ -129,9 +132,20 @@ impl CrossTermViewPort {
             "quit: q, movement{up(k), down(j), left(h), right(l)}",
         ))
     }
+}
 
-    pub fn wait_input(&mut self) -> Option<ViewportEvent> {
-        if let Some(event) = self.reader.next() {
+impl ViewPort for CrossTermViewPort {
+    fn render_state(&mut self, state: &State) {
+        self.draw_level(state);
+        self.draw_entities(state);
+        self.draw_player(state);
+        self.draw_ui(state);
+    }
+
+    fn wait_input(&mut self) -> Option<ViewportEvent> {
+        let mut reader = self.input.read_sync();
+
+        if let Some(event) = reader.next() {
             return match event {
                 InputEvent::Keyboard(KeyEvent::Char('q')) => Some(ViewportEvent::Quit),
                 InputEvent::Keyboard(KeyEvent::Char('?')) => {
@@ -157,15 +171,6 @@ impl CrossTermViewPort {
             };
         }
         None
-    }
-}
-
-impl ViewPort for CrossTermViewPort {
-    fn render_state(&mut self, state: &State) {
-        self.draw_level(state);
-        self.draw_entities(state);
-        self.draw_player(state);
-        self.draw_ui(state);
     }
 }
 
