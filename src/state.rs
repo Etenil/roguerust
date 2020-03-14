@@ -6,7 +6,7 @@ use crate::entities::{Character, Entity, Player};
 use crate::tiling::{tile_to_str, Tile, TileGrid, TileType};
 use crate::world::{apply_movement, Dungeon, Generatable, Level, Movement};
 
-const PLAYER_SIGHT: usize = 5;
+const PLAYER_SIGHT: usize = 3;
 
 pub struct State {
     pub player: Character,

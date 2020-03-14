@@ -470,15 +470,19 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_make_corridor_with_overlapping_points_should_panic() {
-        Corridor::make((0, 0), (0, 0)).unwrap();
+        match Corridor::make((0, 0), (0, 0)) {
+            Ok(_) => assert!(false),
+            Err(_) => assert!(true),
+        };
     }
 
     #[test]
-    #[should_panic]
     fn test_make_corridor_with_misaligned_points_should_panic() {
-        Corridor::make((3, 3), (5, 5)).unwrap();
+        match Corridor::make((3, 3), (5, 5)) {
+            Ok(_) => assert!(false),
+            Err(_) => assert!(true),
+        };
     }
 
     #[test]
