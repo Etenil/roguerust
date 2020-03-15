@@ -59,7 +59,7 @@ impl State {
         }
     }
 
-    fn clear_los(&mut self) {
+    pub fn fog_of_war(&mut self) {
         {
             let grid = self.grid.as_mut().unwrap();
             grid.clear_fog_of_war(self.player.location(), PLAYER_SIGHT);
@@ -134,12 +134,5 @@ impl State {
             }
             _ => Err(String::from("Not on stairs!")),
         }
-    }
-
-    pub fn fog_of_war(&mut self) {
-        self.grid
-            .as_mut()
-            .unwrap()
-            .clear_fog_of_war(self.player.location(), PLAYER_SIGHT);
     }
 }
