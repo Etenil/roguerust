@@ -12,6 +12,7 @@ use std::io::{stdout, Write};
 use crate::entities::{Entity, Player};
 use crate::state::State;
 use crate::tiling::tile_to_str;
+use crate::world::Point;
 
 pub trait ViewPort {
     fn render_state(&mut self, state: &State);
@@ -23,7 +24,7 @@ pub struct CrossTermViewPort {
     ysize: usize,
     raw: RawScreen,
     input: TerminalInput,
-    start: (usize, usize),
+    start: Point,
 }
 
 impl CrossTermViewPort {

@@ -1,5 +1,5 @@
-use log::debug;
 use std::convert::From;
+use crate::world::Point;
 
 #[derive(Copy, Clone, Debug)]
 pub enum TileType {
@@ -110,13 +110,22 @@ impl TileGrid {
         &self.grid
     }
 
-    pub fn tile_at(&self, x: usize, y: usize) -> &Tile {
-        &self.grid[y][x]
+    pub fn tile_at(&self, p: &Point) -> &Tile {
+        &self.grid[p.1][p.0]
     }
 
-    pub fn block_at(&self, x: usize, y: usize) -> &Tile {
+    pub fn block_at(&self, p: &Point) -> &Tile {
         //Needed to integrate with the terminal numbering
-        &self.grid[y + 1][x]
+        &self.grid[p.1 + 1][p.0]
+    }
+
+    pub fn tile_at_mut(&mut self, p: &Point) -> &Tile {
+        &mut self.grid[p.1][p.0]
+    }
+
+    pub fn block_at_mut(&self, p: &Point) -> &Tile {
+        //Needed to integrate with the terminal numbering
+        &mut self.grid[p.1 + 1][p.0]
     }
 
     pub fn xsize(&self) -> usize {
@@ -127,14 +136,14 @@ impl TileGrid {
         self.ysize
     }
 
-    fn reveal(&mut self, x: usize, y: usize) {
-        self.grid[y][x].visibility(true);
+    fn reveal(&mut self, p: &Point) {
+        self.tile_at_mut(p).visibility(true);
     }
 
     /// Clears all blocks in a single line of sight ray; stop when encountering a wall
     /// This uses the bresenham algorithm, see:
     ///     https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
-    fn clear_los(&mut self, start: &(usize, usize), end: &(usize, usize)) {
+    fn clear_los(&mut self, start: &Point, end: &Point) {
         let dx = (end.0 as isize - start.0 as isize).abs();
         let sx: isize = if start.0 < end.0 { 1 } else { -1 };
         let dy = -(end.1 as isize - start.1 as isize).abs();
@@ -145,7 +154,7 @@ impl TileGrid {
         let mut y = start.1;
 
         // the tile we're standing on needs to be visible.
-        self.reveal(start.0, start.1);
+        self.reveal(&start);
 
         while x != end.0 && y != end.1 {
             let err2 = 2 * err;
@@ -158,9 +167,9 @@ impl TileGrid {
                 y = (y as isize + sy).max(0) as usize;
             }
 
-            self.reveal(x, y);
+            self.reveal(&(x, y));
 
-            if self.tile_at(x, y).is_opaque() {
+            if self.tile_at(&(x, y)).is_opaque() {
                 break;
             }
         }
@@ -168,7 +177,7 @@ impl TileGrid {
 
     /// Walk around the perimeter of the line of sight and ray-trace to clear tiles
     /// up to the nearest obstacle.
-    pub fn clear_fog_of_war(&mut self, center: &(usize, usize), radius: usize) {
+    pub fn clear_fog_of_war(&mut self, center: &Point, radius: usize) {
         let perimeter = circle(&(center.0, center.1 + 1), radius);
 
         for point in perimeter.iter() {
@@ -200,13 +209,13 @@ pub trait Tileable {
     fn tile(&self, grid: &mut TileGrid) -> Result<(), String>;
 }
 
-fn circle(center: &(usize, usize), radius: usize) -> Vec<(usize, usize)> {
+fn circle(center: &Point, radius: usize) -> Vec<Point> {
     let mut x: i32 = radius as i32;
     let mut y: i32 = 0;
     let mut err: i32 = 0;
 
     let signs: [i32; 2] = [-1, 1];
-    let mut points: Vec<(usize, usize)> = vec![];
+    let mut points: Vec<Point> = vec![];
 
     while x >= y {
         for xsign in signs.iter() {
@@ -247,11 +256,11 @@ mod tests {
         let grid = TileGrid::new(GRID_SIZE, GRID_SIZE);
         for x in 0..2 {
             for y in 0..2 {
-                assert!(match grid.tile_at(x, y).tile_type {
+                assert!(match grid.tile_at(&(x, y)).tile_type {
                     TileType::Empty => true,
                     _ => false,
                 });
-                assert_eq!(grid.tile_at(x, y).is_visible(), false);
+                assert_eq!(grid.tile_at(&(x, y)).is_visible(), false);
             }
         }
     }
@@ -269,9 +278,9 @@ mod tests {
     #[test]
     fn tilegrid_can_reveal_tiles() {
         let mut grid = TileGrid::new(1, 1);
-        grid.reveal(0, 0);
+        grid.reveal(&(0, 0));
         assert_eq!(grid.grid[0][0].is_visible(), true);
-        assert_eq!(grid.tile_at(0, 0).is_visible(), true);
+        assert_eq!(grid.tile_at(&(0, 0)).is_visible(), true);
     }
 
     #[test]
@@ -282,13 +291,13 @@ mod tests {
         grid.set_tile(5, 3, Tile::from(TileType::Floor));
 
         grid.clear_los(&(5, 3), &(5, 0));
-        assert_eq!(grid.tile_at(5, 4).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 3).is_visible(), true);
-        assert_eq!(grid.tile_at(6, 2).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 2).is_visible(), true);
-        assert_eq!(grid.tile_at(4, 2).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 1).is_visible(), true);
-        assert_eq!(grid.tile_at(5, 0).is_visible(), false);
+        assert_eq!(grid.tile_at(&(5, 4)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(5, 3)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(6, 2)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(5, 2)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(4, 2)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(5, 1)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(5, 0)).is_visible(), false);
     }
 
     #[test]
@@ -299,10 +308,10 @@ mod tests {
         grid.set_tile(5, 3, Tile::from(TileType::Floor));
 
         grid.clear_los(&(5, 3), &(5, 0));
-        assert_eq!(grid.tile_at(5, 0).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 1).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 2).is_visible(), true);
-        assert_eq!(grid.tile_at(5, 3).is_visible(), true);
+        assert_eq!(grid.tile_at(&(5, 0)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(5, 1)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(5, 2)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(5, 3)).is_visible(), true);
     }
 
     #[test]
@@ -313,13 +322,13 @@ mod tests {
         grid.set_tile(5, 1, Tile::from(TileType::Floor));
 
         grid.clear_los(&(5, 1), &(5, 4));
-        assert_eq!(grid.tile_at(5, 0).is_visible(), false);
-        assert_eq!(grid.tile_at(4, 1).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 1).is_visible(), true);
-        assert_eq!(grid.tile_at(6, 1).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 2).is_visible(), true);
-        assert_eq!(grid.tile_at(5, 3).is_visible(), true);
-        assert_eq!(grid.tile_at(5, 4).is_visible(), false);
+        assert_eq!(grid.tile_at(&(5, 0)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(4, 1)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(5, 1)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(6, 1)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(5, 2)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(5, 3)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(5, 4)).is_visible(), false);
     }
 
     #[test]
@@ -330,13 +339,13 @@ mod tests {
         grid.set_tile(1, 5, Tile::from(TileType::Floor));
 
         grid.clear_los(&(1, 5), &(4, 5));
-        assert_eq!(grid.tile_at(0, 5).is_visible(), false);
-        assert_eq!(grid.tile_at(1, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(2, 4).is_visible(), false);
-        assert_eq!(grid.tile_at(2, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(2, 6).is_visible(), false);
-        assert_eq!(grid.tile_at(3, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(3, 6).is_visible(), false);
+        assert_eq!(grid.tile_at(&(0, 5)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(1, 5)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(2, 4)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(2, 5)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(2, 6)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(3, 5)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(3, 6)).is_visible(), false);
     }
 
     #[test]
@@ -347,13 +356,13 @@ mod tests {
         grid.set_tile(3, 5, Tile::from(TileType::Floor));
 
         grid.clear_los(&(3, 5), &(0, 5));
-        assert_eq!(grid.tile_at(4, 5).is_visible(), false);
-        assert_eq!(grid.tile_at(3, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(2, 4).is_visible(), false);
-        assert_eq!(grid.tile_at(2, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(2, 6).is_visible(), false);
-        assert_eq!(grid.tile_at(1, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(0, 6).is_visible(), false);
+        assert_eq!(grid.tile_at(&(4, 5)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(3, 5)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(2, 4)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(2, 5)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(2, 6)).is_visible(), false);
+        assert_eq!(grid.tile_at(&(1, 5)).is_visible(), true);
+        assert_eq!(grid.tile_at(&(0, 6)).is_visible(), false);
     }
 
     #[test]

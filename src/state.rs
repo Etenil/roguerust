@@ -1,8 +1,9 @@
 use crate::entities::{Character, Entity};
-use crate::tiling::{Tile, TileGrid, TileType};
-use crate::world::{apply_movement, Dungeon, Generatable, Level, Movement};
+use crate::tiling::{TileGrid, TileType};
+use crate::world::{apply_movement, Dungeon, Generatable, Level, Movement, Point};
+use std::iter::Filter;
 
-const PLAYER_SIGHT: usize = 3;
+const PLAYER_SIGHT: usize = 10;
 
 pub struct State {
     pub player: Character,
@@ -50,12 +51,20 @@ impl State {
         &mut self.dungeon.levels[self.level]
     }
 
-    fn can_step_on(tile: &Tile) -> bool {
-        match tile.get_type() {
+    fn can_step_on(&self, loc: Point) -> bool {
+        let tile = self.grid.expect("No grid available!").tile_at(&loc);
+        let walkable_tile = match tile.get_type() {
             TileType::Floor => true,
             TileType::StairsDown => true,
             TileType::StairsUp => true,
             _ => false,
+        };
+
+        let entities = self.current_level().entities.iter().filter(|ent| ent.location() == &loc);
+        for ent in entities {
+            match ent {
+                Character::
+            }
         }
     }
 
@@ -88,7 +97,7 @@ impl State {
 
         let loc = apply_movement(*self.player.location(), dir)?;
         // Is the new location colliding with anything?
-        if !State::can_step_on(grid.block_at(loc.0, loc.1)) {
+        if !State::can_step_on(loc) {
             return Err(String::from("Can't move entity!"));
         }
         let ret = self.player.move_by(dir);

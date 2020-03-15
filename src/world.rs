@@ -22,7 +22,7 @@ pub fn apply_movement(point: Point, movement: Movement) -> Result<Point, String>
     let x = point.0 as i32 + movement.0 as i32;
     let y = point.1 as i32 + movement.1 as i32;
     if x < 0 || y < 0 {
-        return Err(String::from("Can't move point off screen"));
+        return Err(String::from("Can't move point off level"));
     }
     Ok((x as usize, y as usize))
 }
