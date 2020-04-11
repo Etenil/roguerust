@@ -1,7 +1,6 @@
 use crate::entities::{Character, Entity};
 use crate::tiling::{TileGrid, TileType};
 use crate::world::{apply_movement, Dungeon, Generatable, Level, Movement, Point};
-use std::iter::Filter;
 
 const PLAYER_SIGHT: usize = 10;
 
@@ -52,7 +51,7 @@ impl State {
     }
 
     fn can_step_on(&self, loc: Point) -> bool {
-        let tile = self.grid.expect("No grid available!").tile_at(&loc);
+        let tile = self.grid.as_ref().expect("No grid available!").tile_at(&loc);
         let walkable_tile = match tile.get_type() {
             TileType::Floor => true,
             TileType::StairsDown => true,
@@ -60,12 +59,12 @@ impl State {
             _ => false,
         };
 
-        let entities = self.current_level().entities.iter().filter(|ent| ent.location() == &loc);
-        for ent in entities {
-            match ent {
-                Character::
-            }
-        }
+        let entities = self.current_level()
+            .entities
+            .iter()
+            .filter(|ent| ent.location() == &loc)
+            .collect::<Vec<&Box<dyn Entity>>>();
+        walkable_tile && entities.len() == 0
     }
 
     pub fn fog_of_war(&mut self) {
@@ -80,7 +79,7 @@ impl State {
                 .grid
                 .as_ref()
                 .unwrap()
-                .block_at(loc.0, loc.1)
+                .block_at(&loc)
                 .is_visible()
                 && !self.current_level().entities[i].is_visible()
             {
@@ -90,14 +89,14 @@ impl State {
     }
 
     pub fn move_player(&mut self, dir: Movement) -> Result<(), String> {
-        let grid = match &self.grid {
-            Some(g) => g,
+        match &self.grid {
+            Some(_) => (),
             None => return Err(String::from("No level loaded!")),
         };
 
         let loc = apply_movement(*self.player.location(), dir)?;
         // Is the new location colliding with anything?
-        if !State::can_step_on(loc) {
+        if !self.can_step_on(loc) {
             return Err(String::from("Can't move entity!"));
         }
         let ret = self.player.move_by(dir);
@@ -116,7 +115,7 @@ impl State {
         }
 
         let loc = self.player.location();
-        match grid.block_at(loc.0, loc.1).get_type() {
+        match grid.block_at(&loc).get_type() {
             TileType::StairsDown => {
                 self.switch_level(self.level + 1);
                 Ok(())
@@ -136,7 +135,7 @@ impl State {
         }
 
         let loc = self.player.location();
-        match grid.block_at(loc.0, loc.1).get_type() {
+        match grid.block_at(&loc).get_type() {
             TileType::StairsUp => {
                 self.switch_level(self.level - 1);
                 Ok(())

@@ -119,11 +119,11 @@ impl TileGrid {
         &self.grid[p.1 + 1][p.0]
     }
 
-    pub fn tile_at_mut(&mut self, p: &Point) -> &Tile {
+    pub fn tile_at_mut(&mut self, p: &Point) -> &mut Tile {
         &mut self.grid[p.1][p.0]
     }
 
-    pub fn block_at_mut(&self, p: &Point) -> &Tile {
+    pub fn block_at_mut(&mut self, p: &Point) -> &mut Tile {
         //Needed to integrate with the terminal numbering
         &mut self.grid[p.1 + 1][p.0]
     }

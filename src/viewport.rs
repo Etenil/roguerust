@@ -73,7 +73,7 @@ impl CrossTermViewPort {
         }
         let grid = state.get_grid().unwrap();
         let dirt = entity.previous_location();
-        let background = grid.block_at(dirt.0, dirt.1);
+        let background = grid.block_at(&dirt);
         let mut sout = stdout();
         queue!(
             sout,
