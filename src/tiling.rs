@@ -17,14 +17,16 @@ pub struct Tile {
     tile_type: TileType,
     visible: bool,
     opaque: bool,
+    lit: bool,
 }
 
 impl Tile {
-    pub fn new(tile_type: TileType, visible: bool, opaque: bool) -> Self {
+    pub fn new(tile_type: TileType, visible: bool, opaque: bool, lit: bool) -> Self {
         Tile {
             tile_type,
             visible,
             opaque,
+	    lit,
         }
     }
 
@@ -38,6 +40,14 @@ impl Tile {
 
     pub fn visibility(&mut self, visible: bool) {
         self.visible = visible;
+    }
+
+    pub fn is_lit(&self) -> bool {
+	self.lit
+    }
+
+    pub fn lit(&mut self, lit: bool) {
+	self.lit = lit;
     }
 
     pub fn is_opaque(&self) -> bool {
@@ -61,6 +71,7 @@ impl From<TileType> for Tile {
                 TileType::Wall => true,
                 _ => false,
             },
+	    lit: false,
         }
     }
 }
@@ -128,62 +139,44 @@ impl TileGrid {
     }
 
     fn reveal(&mut self, x: usize, y: usize) {
-        self.grid[y][x].visibility(true);
+        self.grid[y + 1][x].visibility(true);
     }
 
-    /// Clears all blocks in a single line of sight ray; stop when encountering a wall
-    /// This uses the bresenham algorithm, see:
-    ///     https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
-    fn clear_los(&mut self, start: &(usize, usize), end: &(usize, usize)) {
-        let dx = (end.0 as isize - start.0 as isize).abs();
-        let sx: isize = if start.0 < end.0 { 1 } else { -1 };
-        let dy = -(end.1 as isize - start.1 as isize).abs();
-        let sy: isize = if start.1 < end.1 { 1 } else { -1 };
-        let mut err = dx + dy;
-
-        let mut x = start.0;
-        let mut y = start.1;
-
-        // the tile we're standing on needs to be visible.
-        self.reveal(start.0, start.1);
-
-        while x != end.0 && y != end.1 {
-            let err2 = 2 * err;
-            if err2 >= dy {
-                err += dy;
-                x = (x as isize + sx).max(0) as usize;
-            }
-            if err2 <= dx {
-                err += dx;
-                y = (y as isize + sy).max(0) as usize;
-            }
-
-            self.reveal(x, y);
-
-            if self.tile_at(x, y).is_opaque() {
-                break;
-            }
-        }
+    fn light(&mut self, x: usize, y: usize) {
+	self.grid[y + 1][x].lit(true);
     }
 
     /// Walk around the perimeter of the line of sight and ray-trace to clear tiles
     /// up to the nearest obstacle.
     pub fn clear_fog_of_war(&mut self, center: &(usize, usize), radius: usize) {
-        let perimeter = circle(&(center.0, center.1 + 1), radius);
+	// Unlight everything first.
+	for x in 0..self.xsize {
+	    for y in 0..self.ysize {
+		self.grid[y][x].lit(false)
+	    }
+	}
 
-        for point in perimeter.iter() {
-            self.clear_los(
-                center,
-                &(point.0.min(self.xsize), point.1.min(self.ysize())),
-            );
-        }
+	let start: (usize, usize) = (center.0.saturating_sub(radius), center.1.saturating_sub(radius));
+	let end: (usize, usize) = (center.0.saturating_add(radius), center.1.saturating_add(radius));
+
+	println!("From {:?} to {:?}", start, end);
+
+	for x in start.0..=end.0 {
+	    for y in start.1..=end.1 {
+		self.reveal(x, y);
+		self.light(x, y);
+	    }
+	}
     }
 }
 
 pub fn tile_to_str(tile: &Tile) -> &str {
     if tile.is_visible() {
         match tile.tile_type {
-            TileType::Floor => ".",
+            TileType::Floor => match tile.is_lit() {
+		true => ".",
+		false => " "
+	    },
             TileType::Wall => "#",
             TileType::Empty => " ",
             TileType::StairsDown => ">",
@@ -200,42 +193,42 @@ pub trait Tileable {
     fn tile(&self, grid: &mut TileGrid) -> Result<(), String>;
 }
 
-fn circle(center: &(usize, usize), radius: usize) -> Vec<(usize, usize)> {
-    let mut x: i32 = radius as i32;
-    let mut y: i32 = 0;
-    let mut err: i32 = 0;
+// fn circle(center: &(usize, usize), radius: usize) -> Vec<(usize, usize)> {
+//     let mut x: i32 = radius as i32;
+//     let mut y: i32 = 0;
+//     let mut err: i32 = 0;
 
-    let signs: [i32; 2] = [-1, 1];
-    let mut points: Vec<(usize, usize)> = vec![];
+//     let signs: [i32; 2] = [-1, 1];
+//     let mut points: Vec<(usize, usize)> = vec![];
 
-    while x >= y {
-        for xsign in signs.iter() {
-            for ysign in signs.iter() {
-                points.push((
-                    (center.0 as i32 + xsign * x).max(0) as usize,
-                    (center.1 as i32 + ysign * y).max(0) as usize,
-                ));
-                points.push((
-                    (center.0 as i32 + xsign * y).max(0) as usize,
-                    (center.1 as i32 + ysign * x).max(0) as usize,
-                ));
-            }
-        }
+//     while x >= y {
+//         for xsign in signs.iter() {
+//             for ysign in signs.iter() {
+//                 points.push((
+//                     (center.0 as i32 + xsign * x).max(0) as usize,
+//                     (center.1 as i32 + ysign * y).max(0) as usize,
+//                 ));
+//                 points.push((
+//                     (center.0 as i32 + xsign * y).max(0) as usize,
+//                     (center.1 as i32 + ysign * x).max(0) as usize,
+//                 ));
+//             }
+//         }
 
-        if err <= 0 {
-            y += 1;
-            err += 2 * y + 1;
-        }
+//         if err <= 0 {
+//             y += 1;
+//             err += 2 * y + 1;
+//         }
 
-        if err > 0 {
-            x -= 1;
-            err -= 2 * x + 1;
-        }
-    }
-    points.sort();
-    points.dedup();
-    points
-}
+//         if err > 0 {
+//             x -= 1;
+//             err -= 2 * x + 1;
+//         }
+//     }
+//     points.sort();
+//     points.dedup();
+//     points
+// }
 
 #[cfg(test)]
 mod tests {
@@ -275,106 +268,52 @@ mod tests {
     }
 
     #[test]
-    fn test_clear_los_clears_to_wall_on_vertical_up() {
-        let mut grid = TileGrid::new(9, 9);
-        grid.set_tile(5, 1, Tile::from(TileType::Wall));
-        grid.set_tile(5, 2, Tile::from(TileType::Floor));
-        grid.set_tile(5, 3, Tile::from(TileType::Floor));
+    fn test_clear_fog_of_war() {
+	let mut grid = TileGrid::new(5, 5);
+	
+	grid.clear_fog_of_war(&(2, 2), 1);
 
-        grid.clear_los(&(5, 3), &(5, 0));
-        assert_eq!(grid.tile_at(5, 4).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 3).is_visible(), true);
-        assert_eq!(grid.tile_at(6, 2).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 2).is_visible(), true);
-        assert_eq!(grid.tile_at(4, 2).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 1).is_visible(), true);
-        assert_eq!(grid.tile_at(5, 0).is_visible(), false);
-    }
+	println!("test");
 
-    #[test]
-    fn test_clear_los_stops_at_contiguous_wall_up() {
-        let mut grid = TileGrid::new(9, 9);
-        grid.set_tile(5, 1, Tile::from(TileType::Floor));
-        grid.set_tile(5, 2, Tile::from(TileType::Wall));
-        grid.set_tile(5, 3, Tile::from(TileType::Floor));
+	for x in 0..5 {
+	    for y in 0..5 {
+		if grid.tile_at(x, y).is_visible() {
+		    print!("x");
+		} else {
+		    print!(" ");
+		}
+	    }
+	    print!("\n");
+	}
+	
+	assert_eq!(grid.tile_at(0, 0).is_visible(), false);
+	assert_eq!(grid.tile_at(1, 0).is_visible(), false);
+	assert_eq!(grid.tile_at(2, 0).is_visible(), false);
+	assert_eq!(grid.tile_at(3, 0).is_visible(), false);
+	assert_eq!(grid.tile_at(4, 0).is_visible(), false);
 
-        grid.clear_los(&(5, 3), &(5, 0));
-        assert_eq!(grid.tile_at(5, 0).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 1).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 2).is_visible(), true);
-        assert_eq!(grid.tile_at(5, 3).is_visible(), true);
-    }
+	assert_eq!(grid.tile_at(0, 1).is_visible(), false);
+	assert_eq!(grid.tile_at(1, 1).is_visible(), true);
+	assert_eq!(grid.tile_at(2, 1).is_visible(), true);
+	assert_eq!(grid.tile_at(3, 1).is_visible(), true);
+	assert_eq!(grid.tile_at(4, 1).is_visible(), false);
 
-    #[test]
-    fn test_clear_los_clears_to_wall_on_vertical_down() {
-        let mut grid = TileGrid::new(9, 9);
-        grid.set_tile(5, 3, Tile::from(TileType::Wall));
-        grid.set_tile(5, 2, Tile::from(TileType::Floor));
-        grid.set_tile(5, 1, Tile::from(TileType::Floor));
+	assert_eq!(grid.tile_at(0, 2).is_visible(), false);
+	assert_eq!(grid.tile_at(1, 2).is_visible(), true);
+	assert_eq!(grid.tile_at(2, 2).is_visible(), true);
+	assert_eq!(grid.tile_at(3, 2).is_visible(), true);
+	assert_eq!(grid.tile_at(4, 2).is_visible(), false);
 
-        grid.clear_los(&(5, 1), &(5, 4));
-        assert_eq!(grid.tile_at(5, 0).is_visible(), false);
-        assert_eq!(grid.tile_at(4, 1).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 1).is_visible(), true);
-        assert_eq!(grid.tile_at(6, 1).is_visible(), false);
-        assert_eq!(grid.tile_at(5, 2).is_visible(), true);
-        assert_eq!(grid.tile_at(5, 3).is_visible(), true);
-        assert_eq!(grid.tile_at(5, 4).is_visible(), false);
-    }
+	assert_eq!(grid.tile_at(0, 3).is_visible(), false);
+	assert_eq!(grid.tile_at(1, 3).is_visible(), true);
+	assert_eq!(grid.tile_at(2, 3).is_visible(), true);
+	assert_eq!(grid.tile_at(3, 3).is_visible(), true);
+	assert_eq!(grid.tile_at(4, 3).is_visible(), false);
 
-    #[test]
-    fn test_clear_los_clears_to_wall_on_horizontal_right() {
-        let mut grid = TileGrid::new(9, 9);
-        grid.set_tile(3, 5, Tile::from(TileType::Wall));
-        grid.set_tile(2, 5, Tile::from(TileType::Floor));
-        grid.set_tile(1, 5, Tile::from(TileType::Floor));
-
-        grid.clear_los(&(1, 5), &(4, 5));
-        assert_eq!(grid.tile_at(0, 5).is_visible(), false);
-        assert_eq!(grid.tile_at(1, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(2, 4).is_visible(), false);
-        assert_eq!(grid.tile_at(2, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(2, 6).is_visible(), false);
-        assert_eq!(grid.tile_at(3, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(3, 6).is_visible(), false);
-    }
-
-    #[test]
-    fn test_clear_los_clears_to_wall_on_horizontal_left() {
-        let mut grid = TileGrid::new(9, 9);
-        grid.set_tile(1, 5, Tile::from(TileType::Wall));
-        grid.set_tile(2, 5, Tile::from(TileType::Floor));
-        grid.set_tile(3, 5, Tile::from(TileType::Floor));
-
-        grid.clear_los(&(3, 5), &(0, 5));
-        assert_eq!(grid.tile_at(4, 5).is_visible(), false);
-        assert_eq!(grid.tile_at(3, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(2, 4).is_visible(), false);
-        assert_eq!(grid.tile_at(2, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(2, 6).is_visible(), false);
-        assert_eq!(grid.tile_at(1, 5).is_visible(), true);
-        assert_eq!(grid.tile_at(0, 6).is_visible(), false);
-    }
-
-    #[test]
-    fn circle_creates_a_circle() {
-        let circ = circle(&(10, 10), 3);
-        assert_eq!(
-            circ.as_slice(),
-            [
-                (7, 10),
-                (8, 9),
-                (8, 11),
-                (9, 8),
-                (9, 12),
-                (10, 7),
-                (10, 13),
-                (11, 8),
-                (11, 12),
-                (12, 9),
-                (12, 11),
-                (13, 10)
-            ]
-        )
+	assert_eq!(grid.tile_at(0, 4).is_visible(), false);
+	assert_eq!(grid.tile_at(1, 4).is_visible(), false);
+	assert_eq!(grid.tile_at(2, 4).is_visible(), false);
+	assert_eq!(grid.tile_at(3, 4).is_visible(), false);
+	assert_eq!(grid.tile_at(4, 4).is_visible(), false);
     }
 }
