@@ -181,7 +181,8 @@ impl Player for Character {
                 TileType::Player,
                 true, // player is visible by default
                 false,
-		true
+		true,
+		false
             ),
             dirty: false,
         }

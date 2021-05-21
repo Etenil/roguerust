@@ -175,6 +175,7 @@ impl Corridor {
     fn tile_vertical(&self, grid: &mut TileGrid) {
         let x = self.start.0;
         let endy = self.start.1 + self.length;
+	    
         for y in self.start.1..endy {
             grid.set_empty_tile(x - 1, y, Tile::from(TileType::Wall));
             grid.set_tile(x, y, Tile::from(TileType::Floor));
@@ -187,11 +188,18 @@ impl Corridor {
         grid.set_empty_tile(x - 1, endy, Tile::from(TileType::Wall));
         grid.set_empty_tile(x, endy, Tile::from(TileType::Wall));
         grid.set_empty_tile(x + 1, endy, Tile::from(TileType::Wall));
+
+	// Have a door at the start?
+	let mut rng = rand::thread_rng();
+        if rng.gen_bool(0.5) {
+	    grid.set_tile(self.start.0, self.start.1, Tile::from(TileType::Door));
+	}
     }
 
     fn tile_horizontal(&self, grid: &mut TileGrid) {
         let y = self.start.1;
         let endx = self.start.0 + self.length;
+	
         for x in self.start.0..endx {
             grid.set_empty_tile(x, y - 1, Tile::from(TileType::Wall));
             grid.set_tile(x, y, Tile::from(TileType::Floor));
@@ -204,6 +212,12 @@ impl Corridor {
         grid.set_empty_tile(endx, y - 1, Tile::from(TileType::Wall));
         grid.set_empty_tile(endx, y, Tile::from(TileType::Wall));
         grid.set_empty_tile(endx, y + 1, Tile::from(TileType::Wall));
+
+	// Have a door at the start?
+	let mut rng = rand::thread_rng();
+        if rng.gen_bool(0.5) {
+	    grid.set_tile(self.start.0, self.start.1, Tile::from(TileType::Door));
+	}
     }
 }
 

@@ -1,4 +1,3 @@
-use log::debug;
 use std::convert::From;
 
 #[derive(Copy, Clone, Debug)]
@@ -10,6 +9,7 @@ pub enum TileType {
     StairsDown,
     Character(&'static str),
     Player,
+    Door,
 }
 
 #[derive(Clone, Debug)]
@@ -18,15 +18,17 @@ pub struct Tile {
     visible: bool,
     opaque: bool,
     lit: bool,
+    open: bool,
 }
 
 impl Tile {
-    pub fn new(tile_type: TileType, visible: bool, opaque: bool, lit: bool) -> Self {
+    pub fn new(tile_type: TileType, visible: bool, opaque: bool, open: bool, lit: bool) -> Self {
         Tile {
             tile_type,
             visible,
             opaque,
 	    lit,
+	    open,
         }
     }
 
@@ -57,6 +59,18 @@ impl Tile {
     pub fn opacity(&mut self, opaque: bool) {
         self.opaque = opaque
     }
+
+    pub fn is_open(&self) -> bool {
+	self.open
+    }
+
+    pub fn open(&mut self) {
+	self.open = true;
+    }
+
+    pub fn clos(&mut self) {
+	self.open = false;
+    }
 }
 
 impl From<TileType> for Tile {
@@ -72,6 +86,7 @@ impl From<TileType> for Tile {
                 _ => false,
             },
 	    lit: false,
+	    open: false,
         }
     }
 }
@@ -183,6 +198,10 @@ pub fn tile_to_str(tile: &Tile) -> &str {
             TileType::StairsUp => "<",
             TileType::Player => "@",
             TileType::Character(t) => t,
+	    TileType::Door => match tile.is_open() {
+		true => "'",
+		false => "+",
+	    },
         }
     } else {
         " "
@@ -192,43 +211,6 @@ pub fn tile_to_str(tile: &Tile) -> &str {
 pub trait Tileable {
     fn tile(&self, grid: &mut TileGrid) -> Result<(), String>;
 }
-
-// fn circle(center: &(usize, usize), radius: usize) -> Vec<(usize, usize)> {
-//     let mut x: i32 = radius as i32;
-//     let mut y: i32 = 0;
-//     let mut err: i32 = 0;
-
-//     let signs: [i32; 2] = [-1, 1];
-//     let mut points: Vec<(usize, usize)> = vec![];
-
-//     while x >= y {
-//         for xsign in signs.iter() {
-//             for ysign in signs.iter() {
-//                 points.push((
-//                     (center.0 as i32 + xsign * x).max(0) as usize,
-//                     (center.1 as i32 + ysign * y).max(0) as usize,
-//                 ));
-//                 points.push((
-//                     (center.0 as i32 + xsign * y).max(0) as usize,
-//                     (center.1 as i32 + ysign * x).max(0) as usize,
-//                 ));
-//             }
-//         }
-
-//         if err <= 0 {
-//             y += 1;
-//             err += 2 * y + 1;
-//         }
-
-//         if err > 0 {
-//             x -= 1;
-//             err -= 2 * x + 1;
-//         }
-//     }
-//     points.sort();
-//     points.dedup();
-//     points
-// }
 
 #[cfg(test)]
 mod tests {
